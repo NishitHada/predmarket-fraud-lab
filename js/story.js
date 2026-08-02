@@ -180,6 +180,82 @@ STORY.pool = [
     },
     counter() { return 'Had withdrawals been independently controlled, you could have exited early for a small loss. Frozen in, you ate the whole move — walking away avoided it.'; },
   },
+
+  /* ---------------- CLEAN / winnable markets (family: 'clean') ---------- */
+  {
+    key: 'clean_verified', category: 'clean', family: 'clean', mode: 'legit', trueOutcome: 'YES', signalSide: 'YES', nudge: 'YES',
+    perp: null,
+    question: '🚆 Will the new metro line open to the public by Dec 31?',
+    startPrice: 57,
+    intro: { title: 'A boring, well-run market', body: 'Trades at <b>57% YES</b> on steady two-sided flow. No vertical chart, no mystery accounts, no drama — just a normal market.', cta: 'Look it over →' },
+    mission: 'Not every market is a trap. Is this one clean — and is there an edge worth taking?',
+    clues: [
+      { label: 'Check the oracle', text: '✓ Resolution comes from an <b>independent</b> source — the transit authority\'s official schedule — with published rules.' },
+      { label: 'Check the book & fees', text: '✓ The book is two-sided across a dozen distinct accounts, and fees are fixed at 1% and disclosed.' },
+      { label: 'Check for a signal', text: '✓ The authority has <b>publicly confirmed</b> the December opening. The signal is real and points YES.' },
+    ],
+    blame: 'You entered on a verified edge.',
+    preseed() { storyMark('clean', 'Clean setup', 'Independent oracle, diverse real liquidity, disclosed fees — no red flags.'); G.fairValue = 57; for (let k = 0; k < 5; k++) { G.running = true; tickOnce(); } },
+    duringBet() { G.fairValue = 57 + (Math.random() - 0.5); },
+    script(outcome) { storyMark('resolve', 'Honest resolution', 'The independent oracle settles on the real outcome — no interference.'); G.fairValue = outcome === 'YES' ? 88 : 12; runScript('s_clean1', 10, () => { }, storyResolveTick); },
+    truth: {
+      title: 'A clean market — and a real edge.',
+      gotcha(c) { if (c.result === 'won') return 'No red flags, an independent oracle, and a <b>verified public confirmation</b> — you correctly pressed a real edge.'; if (c.walked) return 'This market was actually <b>clean</b>. Walking away protected you from nothing — and cost you the profit. Restraint only helps when there\'s a trap.'; return 'The market was fair, but you bet <b>against</b> the verified signal.'; },
+      bullets: ['Resolution was an <b>independent oracle</b> with published rules — not someone\'s discretion.', 'Liquidity was <b>real and diverse</b>; fees were fixed and disclosed.', 'A <b>verifiable public confirmation</b> gave you a genuine, checkable edge.'],
+      lesson: 'The goal isn\'t to distrust everything — it\'s to tell clean from crooked. When ownership is diverse, the oracle is independent, fees are fixed, and a signal is verifiable, betting the signal is the +EV move.',
+    },
+    counter() { return 'This one was legit. Buying the verified side won; walking away was safe but left the profit on the table.'; },
+  },
+
+  {
+    key: 'value_bet', category: 'clean', family: 'clean', mode: 'legit', trueOutcome: 'YES', signalSide: 'YES', nudge: 'NO',
+    perp: null,
+    question: '💊 Will the Phase III trial hit its primary endpoint?',
+    startPrice: 38,
+    intro: { title: 'The crowd looks too pessimistic', body: 'A cleanly-run market sitting at just <b>38% YES</b>. Nothing shady here — but is the crowd underrating this one?', cta: 'Dig in →' },
+    mission: 'Fair markets can still misprice. Is there a verified edge the crowd is missing?',
+    clues: [
+      { label: 'Check the oracle', text: '✓ Resolves from the <b>public trial registry</b> — independent, with pre-registered success criteria.' },
+      { label: 'Check the book & fees', text: '✓ Deep, diverse two-sided liquidity; fees fixed and disclosed. No manipulation signatures.' },
+      { label: 'Check the data', text: '✓ The pre-registered <b>interim readout (public)</b> strongly supports success — 38% looks too low.' },
+    ],
+    blame: 'You pressed a verified value edge.',
+    preseed() { storyMark('clean', 'Clean setup', 'Independent registry oracle, diverse liquidity, disclosed fees.'); G.fairValue = 38; for (let k = 0; k < 5; k++) { G.running = true; tickOnce(); } },
+    duringBet() { G.fairValue = 38 + (Math.random() - 0.5); },
+    script(outcome) { storyMark('resolve', 'Honest resolution', 'The registry settles on the real result.'); G.fairValue = outcome === 'YES' ? 90 : 10; runScript('s_clean2', 10, () => { }, storyResolveTick); },
+    truth: {
+      title: 'A fair market — mispriced in your favor.',
+      gotcha(c) { if (c.result === 'won') return 'You did the work, found the crowd was too pessimistic, and <b>pressed a real value edge.</b>'; if (c.walked) return 'This was a <b>clean, underpriced</b> market. Walking away avoided a trap that wasn\'t there — and skipped a +EV bet.'; return 'The public data supported YES, but you bet NO.'; },
+      bullets: ['The market was <b>clean</b> — independent oracle, real liquidity, disclosed fees.', 'The crowd was simply <b>too pessimistic</b> vs. public pre-registered data.', 'A fair market can misprice — verifiable data turns that gap into your edge.'],
+      lesson: 'Not every mispricing is manipulation. In a clean market, doing the reading can hand you a genuine, positive-EV edge the crowd missed.',
+    },
+    counter() { return 'This was a real value bet. Buying YES paid; walking away skipped free +EV.'; },
+  },
+
+  {
+    key: 'clean_no', category: 'clean', family: 'clean', mode: 'legit', trueOutcome: 'NO', signalSide: 'NO', nudge: 'YES',
+    perp: null,
+    question: '📊 Will StartupY reach 1M users this quarter?',
+    startPrice: 52,
+    intro: { title: 'A cleanly-run coin-flip', body: 'Sits at <b>52% YES</b> — a genuine toss-up on a well-run market. No manipulation in sight.', cta: 'Assess it →' },
+    mission: 'Clean doesn\'t mean "bet YES." Which way does the evidence actually point?',
+    clues: [
+      { label: 'Check the oracle', text: '✓ Independent oracle with a <b>published metric definition</b> for "1M users".' },
+      { label: 'Check the book & fees', text: '✓ Real two-sided liquidity across many accounts; fees fixed and disclosed.' },
+      { label: 'Check the data', text: '✓ Public dashboards show growth has <b>stalled</b> well short of the pace needed — the signal points NO.' },
+    ],
+    blame: 'You pressed the verified NO edge.',
+    preseed() { storyMark('clean', 'Clean setup', 'Independent oracle, diverse liquidity, disclosed fees.'); G.fairValue = 52; for (let k = 0; k < 5; k++) { G.running = true; tickOnce(); } },
+    duringBet() { G.fairValue = 52 + (Math.random() - 0.5); },
+    script(outcome) { storyMark('resolve', 'Honest resolution', 'The independent oracle settles on the real outcome.'); G.fairValue = outcome === 'YES' ? 88 : 12; runScript('s_clean3', 10, () => { }, storyResolveTick); },
+    truth: {
+      title: 'A clean market that resolved NO.',
+      gotcha(c) { if (c.result === 'won') return 'You checked the data, saw growth had stalled, and <b>pressed the NO edge</b> — clean ≠ "bet YES".'; if (c.walked) return 'This market was <b>clean</b>; there was no trap to avoid. Walking skipped a verifiable +EV bet on NO.'; return 'The verified signal pointed NO, but you bet YES.'; },
+      bullets: ['The market was <b>fair and transparent</b> — no manipulation signatures.', 'The verifiable signal pointed <b>NO</b> — a clean market is not automatically a YES.', 'Reading the actual evidence (not the vibe) gave you the edge.'],
+      lesson: '"Clean" tells you the market is fair, not which way to bet. The edge still comes from reading the real evidence — here it pointed NO.',
+    },
+    counter() { return 'A legit market. Buying NO won; buying YES lost; walking away skipped a real edge.'; },
+  },
 ];
 
 /* ---------------- coaching + game theory (per scenario) --------------- */
@@ -210,20 +286,37 @@ const COACH = {
     optimal: { play: 'Walk away', ev: 'EV(any bet) < 0', why: 'You don\'t control your downside: fees can change, the price can be moved, and the exit can be frozen. When the counterparty controls your exit, no entry is +EV. Fold.' },
     tips: ['Fees were quietly raised ~20× — every trade bleeds to the house.', 'The operator can freeze withdrawals unilaterally — you may not be able to exit.', '➡ React: if you can\'t trust the fees or the exit, don\'t enter. Walk away.'],
   },
+  clean_verified: {
+    optimal: { play: 'Buy YES', ev: 'EV(YES) > 0', why: 'Clean market + a verifiable public confirmation = a real, checkable edge. Pressing it (Buy YES) is positive-EV. Walking away here just leaves money on the table — restraint is only optimal against a trap.' },
+    tips: ['✓ Flow is spread across many distinct accounts — no single wallet dominates.', '✓ Independent oracle with published rules — settlement isn\'t someone\'s discretion.', '➡ React: no red flags, and a verified confirmation. Real edge — buying YES is +EV.'],
+  },
+  value_bet: {
+    optimal: { play: 'Buy YES', ev: 'EV(YES) > 0', why: 'The market is fair but the crowd is too pessimistic — public pre-registered data supports YES far above 38%. That gap is your edge; buying YES is positive-EV.' },
+    tips: ['✓ Independent oracle (the trial registry) with fixed, pre-registered rules.', '✓ Public interim data strongly supports success — the 38% looks too low.', '➡ React: a fair market can still misprice. You have a verified edge — Buy YES.'],
+  },
+  clean_no: {
+    optimal: { play: 'Buy NO', ev: 'EV(NO) > 0', why: 'Clean market, but the public metrics show growth stalled well short of the target. The verified signal points NO — pressing NO is positive-EV. "Clean" does not mean "bet YES".' },
+    tips: ['✓ Independent oracle with a published metric definition.', '✓ Real two-sided book, disclosed fees — no manipulation signatures.', '➡ React: verified data shows the target won\'t be hit — the edge is NO. Buy NO.'],
+  },
 };
 
 const STRATEGY = {
-  title: 'The winning strategy is knowing when not to play',
+  title: 'Know when to fold — and when to press',
   points: [
-    ['🎲', 'It\'s negative-sum for the uninformed.', 'You\'re usually trading against someone who knows more or controls more — the price, the oracle, or the exit. An uninformed bet against an informed adversary is negative expected value.'],
-    ['🛑', 'Walking away is the minimax move.', 'You can\'t control the outcome, but you can control your worst case. Not betting caps your loss at $0 — often the highest-EV option on the board. "The only winning move is not to play."'],
-    ['🔍', 'Only bet with a verified edge.', 'Betting is +EV only when you know something the counterparty doesn\'t and can act on it — e.g. you\'ve verified a "news" flash is fake, so you fade it.'],
-    ['🧱', 'Check the whole trust stack first.', 'Price, information, settlement, and platform can each be rigged independently. One weak layer makes the market a trap — investigate before you commit, not after.'],
+    ['🧭', 'Tell clean from crooked first.', 'Not every market is rigged. Your job is to classify: is the price real, the oracle independent, the fees fixed, the exit yours? Investigate before you commit — the answer decides everything else.'],
+    ['🛑', 'Against a trap, folding is the minimax move.', 'When someone controls the price, the oracle, or your exit, every uninformed bet is negative-EV. You can\'t control the outcome, but walking away caps your worst case at $0 — often the best play on the board.'],
+    ['🔍', 'Against a clean market, press a verified edge.', 'On a fair market, betting is +EV when you\'ve verified something the crowd is missing — a public confirmation, mispriced data. Here walking away is the mistake: it leaves real money on the table.'],
+    ['🧱', 'One weak layer is enough.', 'Price, information, settlement, and platform can each fail independently. A single compromised layer turns a market into a trap — but if every layer checks out, it\'s a genuine opportunity.'],
   ],
 };
 
 function optNote(r, c) {
   const opt = COACH[r.key] && COACH[r.key].optimal; if (!opt) return '';
+  if (r.family === 'clean') {                     // a genuine market — pressing the verified edge is optimal
+    if (c.result === 'won') return '<div class="so-you good">✓ Optimal — you pressed a verified +EV edge.</div>';
+    if (c.walked) return '<div class="so-you bad">✗ You walked from a clean market — safe, but you left +EV on the table. Not every market is a trap.</div>';
+    return `<div class="so-you bad">✗ You bet ${c.side} against the verified signal in a fair market.</div>`;
+  }
   const fadedOK = r.key === 'fake_news' && c.side === 'NO';
   if (fadedOK) return '<div class="so-you good">✓ Optimal — you had a verified edge and used it.</div>';
   if (c.walked) return r.key === 'fake_news'
@@ -259,10 +352,20 @@ function storyStart() {
   STORY.state.active = true;
   STORY.state.i = -1;
   STORY.state.results = [];
-  STORY.state.deck = shuffle(STORY.pool).slice(0, ROUNDS);
+  STORY.state.deck = buildDeck();
   STORY.state.dd = DD_BUDGET;
   document.body.classList.add('story');
   storyNextRound();
+}
+
+// A balanced draw: 2–3 genuinely clean/winnable markets + the rest traps,
+// so walking away isn't always right — the skill is telling them apart.
+function buildDeck() {
+  const clean = shuffle(STORY.pool.filter(s => s.family === 'clean'));
+  const traps = shuffle(STORY.pool.filter(s => s.family !== 'clean'));
+  const nClean = Math.random() < 0.5 ? 2 : 3;
+  const deck = [...clean.slice(0, nClean), ...traps.slice(0, ROUNDS - nClean)];
+  return shuffle(deck);
 }
 
 function storyExit() {
@@ -309,7 +412,7 @@ function storyEnterBet() {
   setPhase('bet');
   hideStoryModal();
   showCoach(STORY.state.coached
-    ? 'Guided mode: I\'ll flag the red flags live. Then <b>Buy a side</b> or <b>Walk away</b>.'
+    ? 'Guided mode: I\'ll read the signals live — green flags and red. Then <b>Buy a side</b> or <b>Walk away</b>.'
     : 'Investigate with your due-diligence checks, then <b>Buy a side</b> or <b>Walk away</b>.');
   STORY.state.coachN = 0; STORY.state.coachTick = 0;
   renderGuidance();
@@ -331,11 +434,19 @@ function renderGuidance() {
   const dd = document.getElementById('dd-panel'); if (!dd) return;
   if (STORY.state.coached) {
     const tips = (COACH[r.key] && COACH[r.key].tips) || [];
-    const shown = tips.slice(0, STORY.state.coachN).map(t => `<div class="coach-tip${t.startsWith('➡') ? ' react' : ''}">${t}</div>`).join('');
-    dd.innerHTML = `<div class="dd-head">🎓 Guided — spotting the red flags live:</div><div class="coach-feed">${shown || '<div class="coach-tip dim">Watching the market…</div>'}</div>`;
+    const cls = t => t.startsWith('➡') ? ' react' : (t.startsWith('✓') ? ' good' : '');
+    const shown = tips.slice(0, STORY.state.coachN).map(t => `<div class="coach-tip${cls(t)}">${t}</div>`).join('');
+    dd.innerHTML = `<div class="dd-head">🎓 Guided — reading the signals live (green = good, amber = red flag):</div><div class="coach-feed">${shown || '<div class="coach-tip dim">Watching the market…</div>'}</div>`;
   } else {
     renderDD();
   }
+}
+
+// legit → honest outcome; fixed → predetermined; rig → settles against your bet
+function decideOutcome(r, side) {
+  if (r.mode === 'legit') return r.trueOutcome;
+  if (r.mode === 'fixed') return r.fixedOutcome;
+  return opposite(side);
 }
 
 function storyWalkAway() {
@@ -343,7 +454,7 @@ function storyWalkAway() {
   STORY.state.betLocked = true; hideCoach();
   const r = curRound();
   STORY.state.playerSide = 'none';
-  STORY.state.outcome = r.mode === 'fixed' ? r.fixedOutcome : opposite(r.nudge || 'YES');
+  STORY.state.outcome = r.mode === 'rig' ? opposite(r.nudge || 'YES') : (r.mode === 'fixed' ? r.fixedOutcome : r.trueOutcome);
   setPhase('running');
   attack('You walked away before committing.');
   r.script(STORY.state.outcome);
@@ -357,7 +468,7 @@ function storyLockIn() {
   const r = curRound();
   const side = pos > 0 ? 'YES' : 'NO';
   STORY.state.playerSide = side;
-  STORY.state.outcome = r.mode === 'fixed' ? r.fixedOutcome : opposite(side);   // rig scenarios settle against you
+  STORY.state.outcome = decideOutcome(r, side);
   setPhase('running');
   r.script(STORY.state.outcome);
 }
@@ -373,9 +484,17 @@ function storyResolve() {
   surveillanceOnResolve();
   setPhase('reveal');
   const pnl = youWealth() - STORY.state.roundStartWealth;
-  const won = walked ? true : (r.mode === 'fixed' && STORY.state.playerSide === r.winSide);
-  const result = walked ? 'avoided' : (won ? 'won' : 'lost');
-  STORY.state.results.push({ title: r.intro.title, key: r.key, pnl, result, walked });
+  const side = STORY.state.playerSide;
+  let result, won;
+  if (r.family === 'clean') {
+    if (walked) { result = 'missed'; won = false; }        // safe, but left +EV on the table
+    else if (side === r.signalSide) { result = 'won'; won = true; }
+    else { result = 'lost'; won = false; }
+  } else {
+    if (walked) { result = 'avoided'; won = true; }        // dodged a trap
+    else { won = (r.mode === 'fixed' && side === r.winSide); result = won ? 'won' : 'lost'; }
+  }
+  STORY.state.results.push({ title: r.intro.title, key: r.key, pnl, result, walked, family: r.family });
   STORY.state.replay = buildReplay(r);
   showStoryModal(renderReveal(r, { pnl, walked, won, result, side: STORY.state.playerSide, outcome }));
   if (typeof initReplay === 'function') initReplay(STORY.state.replay);
@@ -398,7 +517,12 @@ function buildReplay(r) {
     events.push({ tick: t1, kind: 'you', title: 'You walked away', detail: 'You took no position — you kept your stake.' });
   }
   const ls = STORY.state.playerSide;
-  const resDetail = (ls === 'YES' || ls === 'NO') ? `Settled ${G.market.outcome} — your ${ls} is worth $0.` : `Settled ${G.market.outcome} (you weren't in it).`;
+  let resDetail;
+  if (ls === 'YES' || ls === 'NO') {
+    resDetail = ls === G.market.outcome
+      ? `Settled ${G.market.outcome} — your ${ls} paid out $1/share.`
+      : `Settled ${G.market.outcome} — your ${ls} is worth $0.`;
+  } else { resDetail = `Settled ${G.market.outcome} (you weren't in it).`; }
   events.push({ tick: t1, kind: 'resolve', title: `Resolved ${G.market.outcome}`, detail: resDetail });
   events.sort((a, b) => a.tick - b.tick);
   return { hist, t0, t1, events, outcome: G.market.outcome };
@@ -455,17 +579,21 @@ function renderReveal(r, c) {
   const bullets = r.truth.bullets.map(b => `<li>${b}</li>`).join('');
   const isLast = STORY.state.i >= STORY.state.deck.length - 1;
   let verdict, cls;
-  if (c.result === 'avoided') { verdict = `You walked away and kept your <b>${money(trader('YOU').cash - STORY.state.roundStartWealth + STORY.state.roundStartWealth)}</b> — stake intact.`; cls = 'up'; verdict = `You walked away — <b>stake intact.</b>`; }
+  if (c.result === 'avoided') { verdict = `You walked away — <b>stake intact.</b>`; cls = 'up'; }
+  else if (c.result === 'missed') { verdict = `You walked away from a <b>clean</b> market — safe, but you left the profit on the table.`; cls = 'warnclr'; }
   else if (c.result === 'won') { verdict = `You read it right and came out <b>+${money(c.pnl)}</b>.`; cls = 'up'; }
   else { verdict = `You lost <b>${money(-c.pnl)}</b> on this trade.`; cls = 'down'; }
   const gotcha = r.truth.gotcha ? r.truth.gotcha(c) : '';
+  const culprit = r.perp
+    ? `<div class="story-culprit">🎭 <b>${esc(r.perp.name)}</b> — ${esc(r.perp.motive)}.${bene ? ` Walked away <b class="up">+${money(bene.pnl)}</b>.` : ''}</div>`
+    : `<div class="story-clean">✅ No bad actor here — this market was genuinely clean. The edge came from reading verifiable public info, and it settled honestly.</div>`;
   return `
     <div class="story-tag reveal">The reveal · Round ${STORY.state.i + 1}/${STORY.state.deck.length}</div>
     <div class="story-pnl ${cls}">${verdict}</div>
     <h2>${r.truth.title}</h2>
     ${gotcha ? `<div class="story-gotcha">${gotcha}</div>` : ''}
     <ul class="story-bullets">${bullets}</ul>
-    <div class="story-culprit">🎭 <b>${esc(r.perp.name)}</b> — ${esc(r.perp.motive)}.${bene ? ` Walked away <b class="up">+${money(bene.pnl)}</b>.` : ''}</div>
+    ${culprit}
     ${(() => { const o = COACH[r.key] && COACH[r.key].optimal; return o ? `<div class="story-optimal"><div class="so-h">🎲 Optimal play (game theory): <b>${o.play}</b> <span class="so-ev">${o.ev}</span></div><div class="so-why">${o.why}</div>${optNote(r, c)}</div>` : ''; })()}
     <div class="story-counter">↩︎ <b>Counterfactual:</b> ${r.counter ? r.counter(c) : ''}</div>
     <div class="replay">
@@ -486,17 +614,19 @@ function renderFinish() {
   const avoided = STORY.state.results.filter(r => r.result === 'avoided').length;
   const won = STORY.state.results.filter(r => r.result === 'won').length;
   const lost = STORY.state.results.filter(r => r.result === 'lost').length;
+  const missed = STORY.state.results.filter(r => r.result === 'missed').length;
   const rows = STORY.state.results.map(r => `<div class="fin-row"><span>${esc(r.title)} <em>${r.result}</em></span><b class="${r.pnl < 0 ? 'down' : 'up'}">${signMoney(r.pnl)}</b></div>`).join('');
   let grade, blurb;
-  if (end >= 950) { grade = 'Untouchable'; blurb = 'You smelled nearly every rat. This is what beating the house actually looks like — mostly by refusing to play.'; }
-  else if (end >= 750) { grade = 'Sharp'; blurb = 'You dodged most of the traps. A couple got you — review which tells you missed.'; }
-  else if (end >= 500) { grade = 'Singed'; blurb = 'You took real damage. The setups that look most tempting are usually the ones built for you.'; }
-  else { grade = 'Rekt'; blurb = 'The house owns you. Every "easy" market was bait — restraint and due diligence beat conviction here.'; }
+  if (end >= 1150) { grade = 'Master'; blurb = 'You folded every trap AND pressed the real edges. That\'s the whole skill: knowing which markets to trust.'; }
+  else if (end >= 1000) { grade = 'Sharp'; blurb = 'Net positive — you told clean from crooked and came out ahead. A couple of edges slipped by.'; }
+  else if (end >= 800) { grade = 'Even-ish'; blurb = 'You mostly protected your stake but left money on the table — walking away from clean markets too, not just traps.'; }
+  else if (end >= 500) { grade = 'Singed'; blurb = 'The traps got you. Investigate first: the tempting setups are usually the ones built for you.'; }
+  else { grade = 'Rekt'; blurb = 'The house owns you. Due diligence beats conviction — and not every market deserves a bet.'; }
   return `
     <div class="story-tag">Final score</div>
     <h2>${grade}</h2>
     <div class="fin-score"><div><span>Started with</span><b>${money(you.startCash)}</b></div><div class="arrow">→</div><div><span>Walked away with</span><b class="${end < you.startCash ? 'down' : 'up'}">${money(end)}</b></div></div>
-    <div class="fin-tally">🚶 Walked away from <b>${avoided}</b> · ✅ Faded correctly <b>${won}</b> · 💥 Chased into <b>${lost}</b><br><span class="fin-opt">🎲 Game-theory-optimal plays: <b>${avoided + won}/${STORY.state.results.length}</b></span></div>
+    <div class="fin-tally">🚶 Dodged <b>${avoided}</b> trap${avoided !== 1 ? 's' : ''} · ✅ Won <b>${won}</b> · 💥 Lost <b>${lost}</b> · 😴 Missed <b>${missed}</b> clean market${missed !== 1 ? 's' : ''}<br><span class="fin-opt">🎲 Optimal plays: <b>${avoided + won}/${STORY.state.results.length}</b> (fold traps, press edges)</span></div>
     <div class="fin-rows">${rows}</div>
     <div class="fin-total">Net: <b class="${total < 0 ? 'down' : 'up'}">${signMoney(total)}</b> · ${esc(blurb)}</div>
     <div class="fin-risks">
@@ -506,7 +636,7 @@ function renderFinish() {
       <div class="fr-row"><span class="fr-ico">⚖️</span><div><b>Settlement</b> — corrupt oracles, vague rules. Defense: independent resolution and clear, fixed criteria.</div></div>
       <div class="fr-row"><span class="fr-ico">🏦</span><div><b>Platform</b> — rigged fees, frozen exits. Defense: non-custodial settlement, disclosed terms.</div></div>
     </div>
-    <div class="story-lesson">Every market looked normal from the inside. The winning move was rarely a better bet — it was <b>investigating, and walking away when the answer was "you can't trust this."</b></div>
+    <div class="story-lesson">The skill was never picking YES or NO — it was <b>classifying the market first.</b> Investigate, fold the traps, and press the edges when every layer checks out. Distrust is a tool, not a religion.</div>
     <div class="story-actions"><button class="story-btn primary" onclick="storyStart()">↺ Play again (new draw)</button><button class="story-btn" onclick="storyExit()">Explore the sandbox →</button></div>`;
 }
 

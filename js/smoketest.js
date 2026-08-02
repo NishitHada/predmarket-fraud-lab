@@ -51,7 +51,8 @@ function runSmokeTest() {
 
     // 7) Story Mode: 5 random rounds, deep-link, walk-away, complete
     storyStart(); clearInterval(loopTimer);
-    ok('Story deck is 5 random rounds', STORY.state.deck.length === 5 && STORY.pool.length > 5, 'deck=' + STORY.state.deck.map(r => r.key).join(','));
+    const nClean = STORY.state.deck.filter(r => r.family === 'clean').length;
+    ok('Story deck is 5 rounds, mixed clean+trap', STORY.state.deck.length === 5 && nClean >= 2 && nClean <= 3 && STORY.pool.length >= 9, 'clean=' + nClean + ' deck=' + STORY.state.deck.map(r => r.key).join(','));
     let storyOK = STORY.state.phase === 'intro';
     for (let r = 0; r < STORY.state.deck.length; r++) {
       storyEnterBet();
@@ -66,9 +67,22 @@ function runSmokeTest() {
     }
     storyOK = storyOK && STORY.state.phase === 'finish';
     ok('Story Mode completes (5 rounds, walk-away + both sides)', storyOK, 'phase=' + STORY.state.phase);
-    // walking away preserves capital for that round
-    const walkPreserved = STORY.state.results[0] && STORY.state.results[0].result === 'avoided' && Math.abs(STORY.state.results[0].pnl) < 1;
-    ok('Walk away preserves capital', walkPreserved);
+    // walking away preserves capital for that round (trap → 'avoided', clean → 'missed')
+    const w0 = STORY.state.results[0];
+    const walkPreserved = w0 && (w0.result === 'avoided' || w0.result === 'missed') && Math.abs(w0.pnl) < 1;
+    ok('Walk away preserves capital', walkPreserved, w0 && w0.result);
+    // a clean market bet on the signal side should be winnable
+    let cleanWin = false;
+    for (const key of ['clean_verified', 'value_bet', 'clean_no']) {
+      resetSim(); clearInterval(loopTimer); if (storyActive()) { STORY.state.active = false; document.body.classList.remove('story'); }
+      STORY.state.active = true; STORY.state.deck = [STORY.pool.find(p => p.key === key)]; STORY.state.i = -1; STORY.state.dd = 4; STORY.state.results = [];
+      storyNextRound(); clearInterval(loopTimer); storyEnterBet();
+      const sig = STORY.pool.find(p => p.key === key).signalSide;
+      selectedQty = 100; youTrade(sig === 'YES' ? 'buy' : 'sell'); storyLockIn();
+      for (let i = 0; i < 12; i++) { G.running = true; tickOnce(); }
+      if (STORY.state.results[0].result === 'won' && STORY.state.results[0].pnl > 0) cleanWin = true;
+    }
+    ok('Clean markets are winnable (bet the verified edge)', cleanWin);
     storyExit();
   } catch (err) {
     ok('No exceptions thrown', false, String(err));

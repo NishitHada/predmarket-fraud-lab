@@ -415,3 +415,10 @@ body.story .col.right{display:none}
 .strat-d{font-size:13px;color:var(--dim);line-height:1.5;margin-top:2px}
 .fin-opt{color:var(--purple);font-size:12px}
 #strategy-btn{font-size:12px}
+
+/* clean/legit markets */
+.story-clean{background:rgba(79,209,139,.08);border:1px solid rgba(79,209,139,.3);border-radius:8px;padding:10px 12px;font-size:13px;color:var(--dim);line-height:1.5;margin:10px 0}
+.story-clean b{color:var(--up)}
+.story-pnl.warnclr{color:var(--amber)} .story-pnl.warnclr b{color:var(--amber)}
+.dd-clue:has(> :first-child),.coach-tip{overflow-wrap:anywhere}
+.coach-tip.good{background:rgba(79,209,139,.08);border-color:rgba(79,209,139,.32);color:#7fe0b0}
