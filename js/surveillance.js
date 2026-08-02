@@ -58,7 +58,7 @@ function surveillanceTick() {
     total += t.qty;
   });
   for (const tid of Object.keys(G.traders)) {
-    if (trader(tid).kind === 'mm') continue;
+    if (trader(tid).kind === 'mm' || trader(tid).kind === 'you') continue;   // never flag the human player as an attacker
     const share = ((buyVol[tid] || 0) + (sellVol[tid] || 0)) / (total || 1);
     if (total > 120 && share > 0.5) {
       raiseAlert('conc_' + tid, SEV.med, 'Order-flow concentration',
@@ -69,7 +69,7 @@ function surveillanceTick() {
   // reversal: an actor that heavily bought then heavily sold as price round-tripped
   for (const tid of Object.keys(G.traders)) {
     const b = buyVol[tid] || 0, s = sellVol[tid] || 0;
-    if (b > 150 && s > 100 && trader(tid).kind !== 'mm') {
+    if (b > 150 && s > 100 && trader(tid).kind !== 'mm' && trader(tid).kind !== 'you') {
       const move = recentSwing(W);
       if (move.up > 6 && move.down > 5) {
         raiseAlert('pump_' + tid, SEV.high, 'Pump & dump',
@@ -83,7 +83,7 @@ function surveillanceTick() {
   {
     const move = recentReturn(W);
     for (const tid of Object.keys(G.traders)) {
-      if (trader(tid).kind === 'mm') continue;
+      if (trader(tid).kind === 'mm' || trader(tid).kind === 'you') continue;   // never flag the human player as an attacker
       const net = (buyVol[tid] || 0) - (sellVol[tid] || 0);
       const share = ((buyVol[tid] || 0) + (sellVol[tid] || 0)) / (total || 1);
       if (total > 60 && share > 0.30 && Math.abs(net) > 50 &&

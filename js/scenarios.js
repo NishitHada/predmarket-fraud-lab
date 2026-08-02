@@ -33,9 +33,25 @@ function launch(id) {
     toast('The market is ' + G.market.status + ' — reset to run an attack.', 'warn');
     return;
   }
-  if (s.category !== 'resolution') markAttackImpact(s.name);   // measure the effect on YOU
+  if (s.category !== 'resolution') { markAttackImpact(s.name); G.attackImpact.scenarioId = id; }
   s.run();
 }
+
+// Post-attack teaching content: what looked legit, what was rigged, the tells,
+// and the defense. `what` (the trick) comes from the scenario itself.
+const LESSONS = {
+  wash: { looked: 'A busy tape and lots of volume — the market seemed liquid and popular.', signs: 'The same two accounts trading back and forth; volume soaring while the price barely moves.', protection: 'Public beneficial-ownership of accounts; ignoring volume you can\'t attribute to distinct traders.' },
+  spoof: { looked: 'A big wall of buy orders — strong demand holding the price up.', signs: 'Huge orders that never fill and vanish the instant price approaches them; the same actor selling the other side.', protection: 'Order-to-trade ratio limits; penalties for mass-cancelling; showing you resting-vs-filled liquidity.' },
+  pump: { looked: 'A fast-rising price and green candles — momentum you didn\'t want to miss.', signs: 'One account driving almost all the buying; a near-vertical move with no news behind it.', protection: 'Per-account position/volume limits; never chasing a move you can\'t explain; deeper real liquidity.' },
+  ramp_close: { looked: 'A tidy closing price that "confirmed" where the market was heading.', signs: 'Small trades by one actor nudging the last price, especially right before the close.', protection: 'Settling on a time-weighted average price, not the last print; auction-based closes.' },
+  insider: { looked: 'A normal position taken just before good news moved the price.', signs: 'An account loading up right before a move it couldn\'t have known about legitimately.', protection: 'Disclosure rules; trading halts around known events; monitoring pre-event position ramps.' },
+  frontrun: { looked: 'Your order filled — just at a slightly worse price than you expected.', signs: 'The operator/insider consistently trading microseconds ahead of large orders.', protection: 'Separation of the operator from trading; sealed order flow; you never being the last to know.' },
+  sybil: { looked: 'Broad, independent-looking demand — a real crowd forming a consensus.', signs: 'Many "different" accounts moving in perfect lockstep; shared funding or timing.', protection: 'Identity/KYC on accounts; ownership transparency; distrusting unverifiable "consensus".' },
+  oracle_setup: { looked: 'A confident market with an insider quietly building the opposite position.', signs: 'A large contrarian bet forming just before settlement by someone close to the resolver.', protection: 'An independent, decentralized oracle; published, unambiguous resolution rules.' },
+  rig_fees: { looked: 'Business as usual — you kept trading, unaware anything changed.', signs: 'Your cash bleeding faster than your trades explain; fee terms that can change silently.', protection: 'Fee changes that require notice and consent; an on-chain/immutable fee schedule.' },
+  freeze: { looked: 'A brief "maintenance" notice while you held a position.', signs: 'You suddenly can\'t sell/withdraw — while the operator still can.', protection: 'Non-custodial settlement; withdrawal guarantees; the operator never holding the exit switch.' },
+  operator_position: { looked: 'A neutral-seeming venue running a fair market.', signs: 'The platform itself holding a directional position and trading against its users.', protection: 'A strict wall between operating the market and betting in it; disclosed operator holdings.' },
+};
 
 /* ============================ TRADE-BASED ============================== */
 

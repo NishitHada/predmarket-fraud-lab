@@ -10,7 +10,7 @@ function tickOnce() {
   G.volThisTick = 0;
 
   botTick();
-  if (storyActive()) storyTick();
+  if (typeof storyActive === 'function' && storyActive()) storyTick();
   stepScenarios();
 
   // sample price + volume for the chart
@@ -20,7 +20,8 @@ function tickOnce() {
   surveillanceTick();
 
   // scheduled honest resolution when the clock runs out (sandbox only)
-  if (!storyActive() && G.tick >= G.resolveAt && G.market.status === 'open') {
+  const inStory = typeof storyActive === 'function' && storyActive();
+  if (!inStory && G.tick >= G.resolveAt && G.market.status === 'open') {
     resolveHonest();
     surveillanceOnResolve();
   }
@@ -89,6 +90,18 @@ function wireControls() {
 
   $('#story-mode').onclick = () => storyStart();
   $('#exit-story').onclick = () => storyExit();
+
+  // primer / framing modal
+  const primer = $('#primer-modal');
+  const openPrimer = () => primer.classList.add('show');
+  const closePrimer = () => primer.classList.remove('show');
+  $('#help-btn').onclick = openPrimer;
+  $('#primer-play').onclick = () => { closePrimer(); storyStart(); };
+  $('#primer-explore').onclick = closePrimer;
+  // show once per browser, first visit
+  try {
+    if (!localStorage.getItem('fraudlab_seen')) { openPrimer(); localStorage.setItem('fraudlab_seen', '1'); }
+  } catch (e) { /* private mode — skip */ }
 }
 
 /* ------------------------- your trading desk -------------------------- */
@@ -147,12 +160,40 @@ function flashToast(msg, kind) {
   toastTimer = setTimeout(() => { G.toast = null; renderToast(); }, 3400);
 }
 
+// If a script fails to load, its globals are missing — show a real error
+// instead of a blank, frozen simulation.
+function checkRequiredScripts() {
+  const required = {
+    'engine.js': 'G', 'bots.js': 'initTraders', 'scenarios.js': 'SCENARIOS',
+    'surveillance.js': 'surveillanceTick', 'story.js': 'storyStart',
+    'replay.js': 'initReplay', 'ui.js': 'renderAll',
+  };
+  // `typeof X` is the one reference that doesn't throw for an undeclared name
+  return Object.entries(required)
+    .filter(([, sym]) => eval('typeof ' + sym) === 'undefined')
+    .map(([file]) => file);
+}
+
+function showStartupError(msg) {
+  const el = document.getElementById('startup-error');
+  if (!el) { alert('Startup error: ' + msg); return; }
+  el.querySelector('.se-detail').textContent = msg;
+  el.style.display = 'flex';
+}
+
 window.addEventListener('DOMContentLoaded', () => {
-  initTraders();
-  buildScenarioButtons();
-  wireControls();
-  wireDesk();
-  for (let i = 0; i < 4; i++) tickOnce();
-  renderAll();
-  startLoop();
+  try {
+    const missing = checkRequiredScripts();
+    if (missing.length) throw new Error('Failed to load: ' + missing.join(', ') + '. Check your connection or reload.');
+    initTraders();
+    buildScenarioButtons();
+    wireControls();
+    wireDesk();
+    for (let i = 0; i < 4; i++) tickOnce();
+    renderAll();
+    startLoop();
+  } catch (err) {
+    console.error('Fraud Lab failed to start:', err);
+    showStartupError(err && err.message ? err.message : String(err));
+  }
 });

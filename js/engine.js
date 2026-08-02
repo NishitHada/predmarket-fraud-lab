@@ -6,6 +6,8 @@
    - Everything is fake money. This is a teaching sandbox for market abuse.
    ========================================================================= */
 
+const APP_VERSION = 'v0.5';   // shown in footer; keep the ?v=N script tags in sync on release
+
 const G = {
   tick: 0,
   running: true,
@@ -226,7 +228,7 @@ function mark(label, color) {
   if (G.markers.length > 60) G.markers.shift();
 }
 
-function toast(msg, kind) { G.toast = { msg, kind: kind || 'info', tick: G.tick }; }
+function toast(msg, kind) { G.toast = { msg, kind: kind || 'info', tick: G.tick, time: Date.now() }; }
 
 // YOU: current wealth (marked to price while open, settled once resolved).
 function youWealth() {

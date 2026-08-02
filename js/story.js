@@ -406,6 +406,12 @@ function renderFinish() {
     </div>
     <div class="fin-rows">${rows}</div>
     <div class="fin-total">Net result: <b class="${total < 0 ? 'down' : 'up'}">${signMoney(total)}</b></div>
+    <div class="fin-risks">
+      <div class="fin-risks-h">You just met the three ways a market gets rigged — independently:</div>
+      <div class="fr-row"><span class="fr-ico">📈</span><div><b>Market manipulation</b> (round 1) — the <i>price</i> was faked. Defense: attributable volume, position limits, deep real liquidity.</div></div>
+      <div class="fr-row"><span class="fr-ico">⚖️</span><div><b>Corrupt resolution</b> (round 2) — the <i>outcome</i> was rigged. Defense: an independent oracle and clear, unchangeable rules.</div></div>
+      <div class="fr-row"><span class="fr-ico">🏦</span><div><b>Operator abuse</b> (round 3) — your <i>access</i> was controlled. Defense: non-custodial settlement, disclosed fees, no freeze switch.</div></div>
+    </div>
     <div class="story-lesson">Every market looked normal while you were inside it — a rising chart, a confident crowd, a smooth platform. That's exactly the point: <b>manipulation is invisible from the inside.</b> The only defenses are transparency (who is trading, who settles, who holds), and healthy suspicion of anything that looks like free money.</div>
     <div class="story-actions">
       <button class="story-btn primary" onclick="storyStart()">↺ Play again</button>

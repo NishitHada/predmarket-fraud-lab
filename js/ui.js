@@ -56,6 +56,47 @@ function renderDesk() {
   }
 }
 
+/* text equivalent of the price chart for screen readers (#21) */
+function renderChartSR() {
+  const sr = $('#chart-sr'); if (!sr) return;
+  const h = G.priceHistory;
+  const price = Math.round(G.market.lastPrice);
+  const change = h.length > 10 ? price - Math.round(h[h.length - 11].price) : 0;
+  const vol = h.length ? h[h.length - 1].vol : 0;
+  const ev = G.markers.slice(-3).map(m => m.label).join(', ');
+  sr.textContent = `Price ${price} cents (${price}% implied YES), ${change >= 0 ? 'up' : 'down'} ${Math.abs(change)} over the last 10 ticks. Recent volume ${vol}.` + (ev ? ` Recent events: ${ev}.` : '');
+}
+
+/* --------------------------- lesson card ------------------------------ */
+function renderLesson() {
+  const box = $('#lesson');
+  const inStory = typeof storyActive === 'function' && storyActive();
+  const ai = G.attackImpact;
+  const s = ai && ai.scenarioId ? SCENARIOS[ai.scenarioId] : null;
+  const lz = s && typeof LESSONS !== 'undefined' ? LESSONS[ai.scenarioId] : null;
+  if (inStory || !s || !lz) { box.style.display = 'none'; box.innerHTML = ''; return; }
+
+  const y = trader('YOU');
+  const delta = youWealth() - ai.base;
+  const costLine = (y.shares === 0 && Math.abs(delta) < 1)
+    ? `You held no position, so it didn't cost <b>you</b> anything — but everyone in the market who did got hit. (Buy in and re-run to feel it.)`
+    : `Your position has moved <b class="${delta >= 0 ? 'up' : 'down'}">${signMoney(delta)}</b> since this began${delta < 0 ? ' — you\'re the one paying for it.' : (delta > 0 ? ' — but this round-trips; hold and watch it reverse.' : '.')}`;
+
+  box.style.display = 'block';
+  box.innerHTML = `
+    <div class="lesson-head"><span class="lesson-kicker">Anatomy of the con</span>
+      <b>${esc(s.name)}</b>
+      <button class="lesson-x" aria-label="Dismiss lesson">✕</button></div>
+    <div class="lesson-grid">
+      <div class="lz"><span class="lz-l ok">What looked legit</span>${lz.looked}</div>
+      <div class="lz"><span class="lz-l bad">What was actually rigged</span>${s.what}</div>
+      <div class="lz"><span class="lz-l warn">The warning signs</span>${lz.signs}</div>
+      <div class="lz"><span class="lz-l cost">What it cost you</span>${costLine}</div>
+      <div class="lz wide"><span class="lz-l prot">What would've protected you</span>${lz.protection}</div>
+    </div>`;
+  box.querySelector('.lesson-x').onclick = () => { G.attackImpact = null; renderAll(); };
+}
+
 /* ------------------------------ banner -------------------------------- */
 function renderBanner() {
   const e = $('#banner');
@@ -263,10 +304,14 @@ function renderAlerts() {
   const box = $('#alerts'); box.innerHTML = '';
   if (!G.alerts.length) { box.appendChild(el('div', 'empty', 'No alerts yet. Launch an attack →')); }
   const sevName = { 1: 'low', 2: 'med', 3: 'high' };
+  // CONFIRMED = provable from state/definition; SUSPECTED = inferred from patterns
+  const confirmedKeys = ['wash', 'op_pos', 'fees', 'freeze', 'frontrun'];
   G.alerts.forEach(a => {
+    const confirmed = confirmedKeys.some(k => a.key.startsWith(k));
     const r = el('div', 'alert ' + sevName[a.severity]);
     const head = el('div', 'ahead');
     head.appendChild(el('span', 'sev ' + sevName[a.severity], sevName[a.severity]));
+    head.appendChild(el('span', 'conf ' + (confirmed ? 'confirmed' : 'suspected'), confirmed ? 'confirmed' : 'suspected'));
     head.appendChild(el('span', 'atitle', a.title));
     if (a.count > 1) head.appendChild(el('span', 'acount', '×' + a.count));
     r.appendChild(head);
@@ -287,10 +332,11 @@ function renderAttackLog() {
 }
 
 function renderAll() {
-  renderHeader(); renderBanner(); renderDesk(); renderChart(); renderBook(); renderTape();
-  renderTraders(); renderAlerts(); renderAttackLog(); renderToast();
+  renderHeader(); renderBanner(); renderDesk(); renderLesson(); renderChart(); renderBook(); renderTape();
+  renderTraders(); renderAlerts(); renderAttackLog(); renderToast(); renderChartSR();
   $('#tickno').textContent = 't' + G.tick;
   $('#fee').textContent = G.flags.feeBps + ' bps';
   $('#frozen').textContent = G.flags.withdrawalsFrozen ? 'FROZEN' : 'open';
   $('#frozen').className = G.flags.withdrawalsFrozen ? 'bad' : '';
+  const verEl = $('#ver'); if (verEl && !verEl.textContent) verEl.textContent = '· ' + (typeof APP_VERSION !== 'undefined' ? APP_VERSION : '');
 }

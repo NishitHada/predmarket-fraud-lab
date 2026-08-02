@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Prediction Market Fraud Lab</title>
-  <link rel="stylesheet" href="styles.css?v=4">
+  <link rel="stylesheet" href="styles.css?v=5">
 </head>
 <body>
   <header class="topbar">
@@ -18,11 +18,13 @@
     <div class="controls">
       <button id="story-mode" class="story-cta">🎮 Play: Can you beat the house?</button>
       <button id="exit-story" class="warn">✕ Exit story</button>
-      <span class="tickno" id="tickno">t0</span>
-      <button id="pause">⏸ Pause</button>
-      <button id="step">Step</button>
-      <input id="speed" type="range" min="100" max="1000" value="350" title="speed">
-      <button id="reset" class="warn">↺ Reset</button>
+      <button id="help-btn" title="How this works" aria-label="How this works">?</button>
+      <span class="tickno" id="tickno" title="Simulation tick (time step)">t0</span>
+      <button id="pause" aria-label="Pause or resume the simulation">⏸ Pause</button>
+      <button id="step" aria-label="Advance one tick">Step</button>
+      <label class="speed-label" for="speed">Speed</label>
+      <input id="speed" type="range" min="100" max="1000" value="350" aria-label="Simulation speed">
+      <button id="reset" class="warn" title="Starts a brand-new simulation (clears the market and your money)" aria-label="Reset — start a new simulation">↺ Reset</button>
     </div>
   </header>
 
@@ -36,7 +38,7 @@
       <div class="stat"><div id="price" class="big">--</div><div class="sl" id="prob">--</div></div>
       <div class="stat"><div id="status" class="status open">OPEN</div><div class="sl" id="countdown">--</div></div>
       <div class="stat small"><div class="sl">fee</div><div id="fee">15 bps</div></div>
-      <div class="stat small"><div class="sl">withdrawals</div><div id="frozen">open</div></div>
+      <div class="stat small"><div class="sl">sell / withdraw</div><div id="frozen" title="Can you exit your position right now?">open</div></div>
     </div>
   </section>
 
@@ -84,9 +86,12 @@
     <!-- center: chart + attack console -->
     <div class="col center">
       <div class="panel chartpanel">
-        <div class="ptitle">Price / Implied Probability <span>0–100¢</span></div>
-        <canvas id="chart"></canvas>
+        <div class="ptitle">Price / Implied Probability <span>0–100¢ = implied % chance of YES</span></div>
+        <canvas id="chart" role="img" aria-label="Price chart"></canvas>
+        <div id="chart-sr" class="sr-only" aria-live="polite"></div>
       </div>
+
+      <div id="lesson" class="lesson-card" role="region" aria-label="Attack lesson"></div>
 
       <div class="panel console">
         <div class="ptitle">Attack Console <span>click to run a manipulation against the live market</span></div>
@@ -145,17 +150,48 @@
     <div class="story-card"></div>
   </div>
 
+  <!-- one-time framing / primer (reuses story-modal styling) -->
+  <div id="primer-modal" class="story-modal">
+    <div class="story-card">
+      <div class="story-tag">Before you play — 60 seconds</div>
+      <h2>A prediction market is a bet on an event</h2>
+      <p>You buy <b class="up">YES</b> or <b class="down">NO</b> shares priced 1–99¢. The price <b>is the crowd's implied probability</b> — 70¢ means "70% likely." Whoever's right is paid $1 per share at resolution; the other side gets $0. Buying NO is the same as betting against YES (a short).</p>
+      <div class="primer-stack">
+        <div class="ps-head">The catch: three separate things can be rigged — independently.</div>
+        <div class="ps-row"><span class="ps-ico">📈</span><div><b>The price</b> — faked with wash trades, pumps, spoofing and sock-puppets. A price is a <i>claim</i>, not proof.</div></div>
+        <div class="ps-row"><span class="ps-ico">⚖️</span><div><b>The settlement</b> — whoever decides the outcome (the "oracle") can simply rule against you, no matter what the price said.</div></div>
+        <div class="ps-row"><span class="ps-ico">🏦</span><div><b>Your access</b> — the platform can raise fees, freeze withdrawals, or trade against you.</div></div>
+      </div>
+      <p class="primer-tp">Trust a market only as much as you trust its weakest layer: <b>its liquidity, its traders, its oracle, and its operator.</b></p>
+      <div class="story-actions">
+        <button class="story-btn primary" id="primer-play">🎮 Play the guided game</button>
+        <button class="story-btn" id="primer-explore">Explore the sandbox</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- graceful startup failure -->
+  <div id="startup-error" class="startup-error">
+    <div class="se-card">
+      <div class="se-title">⚠️ The simulation couldn't start</div>
+      <div class="se-detail"></div>
+      <button class="story-btn" onclick="location.reload()">Reload</button>
+    </div>
+  </div>
+
   <footer class="foot">
     Educational sandbox · every account, trade, and dollar is simulated · flags show what a real surveillance desk would look for.
+    <span class="ver" id="ver"></span>
   </footer>
 
-  <script src="js/engine.js?v=3"></script>
-  <script src="js/bots.js?v=3"></script>
-  <script src="js/scenarios.js?v=3"></script>
-  <script src="js/surveillance.js?v=3"></script>
-  <script src="js/story.js?v=3"></script>
-  <script src="js/replay.js?v=3"></script>
-  <script src="js/ui.js?v=3"></script>
-  <script src="js/main.js?v=3"></script>
+  <script src="js/engine.js?v=5"></script>
+  <script src="js/bots.js?v=5"></script>
+  <script src="js/scenarios.js?v=5"></script>
+  <script src="js/surveillance.js?v=5"></script>
+  <script src="js/story.js?v=5"></script>
+  <script src="js/replay.js?v=5"></script>
+  <script src="js/ui.js?v=5"></script>
+  <script src="js/main.js?v=5"></script>
+  <script src="js/smoketest.js?v=5"></script>
 </body>
 </html>
