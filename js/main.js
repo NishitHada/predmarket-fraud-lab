@@ -4,6 +4,13 @@
 
 let loopTimer = null;
 
+// Story mode has its own shareable URL: /?mode=story, /#story, or /story.html
+function wantsStory() {
+  return /[?&](mode=story|story)\b/.test(location.search) ||
+         location.hash === '#story' ||
+         /story\.html$/.test(location.pathname);
+}
+
 function tickOnce() {
   if (!G.running || G.market.status === 'resolved') return;
   G.tick++;
@@ -100,7 +107,8 @@ function wireControls() {
   $('#primer-explore').onclick = closePrimer;
   // show once per browser, first visit
   try {
-    if (!localStorage.getItem('fraudlab_seen')) { openPrimer(); localStorage.setItem('fraudlab_seen', '1'); }
+    // don't interrupt a story-mode deep link with the primer
+    if (!wantsStory() && !localStorage.getItem('fraudlab_seen')) { openPrimer(); localStorage.setItem('fraudlab_seen', '1'); }
   } catch (e) { /* private mode — skip */ }
 }
 
@@ -192,6 +200,7 @@ window.addEventListener('DOMContentLoaded', () => {
     for (let i = 0; i < 4; i++) tickOnce();
     renderAll();
     startLoop();
+    if (wantsStory()) storyStart();   // deep-linked straight into story mode
   } catch (err) {
     console.error('Fraud Lab failed to start:', err);
     showStartupError(err && err.message ? err.message : String(err));
