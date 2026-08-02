@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Prediction Market Fraud Lab</title>
+  <link rel="stylesheet" href="styles.css?v=4">
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <span class="logo">◈</span>
+      <div>
+        <div class="btitle">Prediction Market <span>Fraud Lab</span></div>
+        <div class="bsub">A fake market for studying manipulation — no real money, no real people.</div>
+      </div>
+    </div>
+    <div class="controls">
+      <button id="story-mode" class="story-cta">🎮 Play: Can you beat the house?</button>
+      <button id="exit-story" class="warn">✕ Exit story</button>
+      <span class="tickno" id="tickno">t0</span>
+      <button id="pause">⏸ Pause</button>
+      <button id="step">Step</button>
+      <input id="speed" type="range" min="100" max="1000" value="350" title="speed">
+      <button id="reset" class="warn">↺ Reset</button>
+    </div>
+  </header>
+
+  <section class="marketbar">
+    <div class="mq">
+      <div class="mqlabel">MARKET</div>
+      <div id="question" class="mqtext"></div>
+      <div id="resnote" class="resnote"></div>
+    </div>
+    <div class="mstats">
+      <div class="stat"><div id="price" class="big">--</div><div class="sl" id="prob">--</div></div>
+      <div class="stat"><div id="status" class="status open">OPEN</div><div class="sl" id="countdown">--</div></div>
+      <div class="stat small"><div class="sl">fee</div><div id="fee">15 bps</div></div>
+      <div class="stat small"><div class="sl">withdrawals</div><div id="frozen">open</div></div>
+    </div>
+  </section>
+
+  <div id="banner" class="banner calm"></div>
+
+  <main class="grid">
+    <!-- left: your desk + order book + tape -->
+    <div class="col left">
+      <div class="panel desk">
+        <div class="ptitle">🎯 Your Desk <span id="you-cash">$1,000</span></div>
+        <div class="posrow">
+          <div id="you-pos" class="posbig flat">No position</div>
+          <div id="you-now" class="posnow up">P&L now: +$0</div>
+        </div>
+        <div class="payouts">
+          <div class="pay"><span>If it resolves YES</span><b id="pay-yes" class="up">+$0</b></div>
+          <div class="pay"><span>If it resolves NO</span><b id="pay-no" class="up">+$0</b></div>
+        </div>
+        <div id="you-impact" class="you-impact"></div>
+        <div class="qtyrow">
+          <span>Bet size</span>
+          <button class="qbtn" data-q="10">10</button>
+          <button class="qbtn" data-q="50">50</button>
+          <button class="qbtn" data-q="100">100</button>
+          <button class="qbtn" data-q="250">250</button>
+        </div>
+        <div class="tradebtns">
+          <button id="buy-yes" class="tb yes">Buy YES <small id="yes-price">--</small></button>
+          <button id="buy-no" class="tb no">Buy NO <small id="no-price">--</small></button>
+        </div>
+        <button id="close-pos" class="tb close">Close my position</button>
+        <div class="deskhint">Buy <b>YES</b> if you think it happens, <b>NO</b> if not. Your trades move the price (the odds) — but the <b>outcome</b> is decided at resolution by the oracle. Bet, then run an attack.</div>
+      </div>
+
+      <div class="panel">
+        <div class="ptitle">Order Book <span>YES</span></div>
+        <div id="book" class="book"></div>
+      </div>
+      <div class="panel">
+        <div class="ptitle">Trade Tape</div>
+        <div id="tape" class="tape"></div>
+      </div>
+    </div>
+
+    <!-- center: chart + attack console -->
+    <div class="col center">
+      <div class="panel chartpanel">
+        <div class="ptitle">Price / Implied Probability <span>0–100¢</span></div>
+        <canvas id="chart"></canvas>
+      </div>
+
+      <div class="panel console">
+        <div class="ptitle">Attack Console <span>click to run a manipulation against the live market</span></div>
+        <div class="cats">
+          <div class="catcol">
+            <div class="cathead trade">Trade-based</div>
+            <div id="cat-trade"></div>
+          </div>
+          <div class="catcol">
+            <div class="cathead structure">Market structure</div>
+            <div id="cat-structure"></div>
+          </div>
+          <div class="catcol">
+            <div class="cathead oracle">Oracle / resolution</div>
+            <div id="cat-oracle"></div>
+            <div class="resolvebox">
+              <div class="rlabel">Resolve the market:</div>
+              <button id="resolve-honest" class="rbtn good">Honest</button>
+              <button id="resolve-yes" class="rbtn bad">Corrupt → YES</button>
+              <button id="resolve-no" class="rbtn bad">Corrupt → NO</button>
+            </div>
+          </div>
+          <div class="catcol">
+            <div class="cathead operator">Platform / operator</div>
+            <div id="cat-operator"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- right: surveillance + attackers + leaderboard -->
+    <div class="col right">
+      <div class="panel" id="panel-surv">
+        <div class="ptitle surv">🛡 Surveillance Alerts</div>
+        <div id="alerts" class="alerts"></div>
+      </div>
+      <div class="panel" id="panel-attacklog">
+        <div class="ptitle atk">☠ Attacker Log</div>
+        <div id="attacklog" class="attacklog"></div>
+      </div>
+      <div class="panel" id="panel-traders">
+        <div class="ptitle">Who's Who <span>wealth = cash + position</span></div>
+        <div id="traders" class="traders"></div>
+      </div>
+    </div>
+  </main>
+
+  <div id="toast" class="toast"></div>
+
+  <!-- story mode: coach bar + reveal modal -->
+  <div id="story-coach" class="story-coach">
+    <div class="coach-text"></div>
+    <button class="story-btn primary" onclick="storyLockIn()">Lock in my bet ▶</button>
+  </div>
+  <div id="story-modal" class="story-modal">
+    <div class="story-card"></div>
+  </div>
+
+  <footer class="foot">
+    Educational sandbox · every account, trade, and dollar is simulated · flags show what a real surveillance desk would look for.
+  </footer>
+
+  <script src="js/engine.js?v=3"></script>
+  <script src="js/bots.js?v=3"></script>
+  <script src="js/scenarios.js?v=3"></script>
+  <script src="js/surveillance.js?v=3"></script>
+  <script src="js/story.js?v=3"></script>
+  <script src="js/replay.js?v=3"></script>
+  <script src="js/ui.js?v=3"></script>
+  <script src="js/main.js?v=3"></script>
+</body>
+</html>
