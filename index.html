@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Prediction Market Fraud Lab</title>
-  <link rel="stylesheet" href="styles.css?v=7">
+  <link rel="stylesheet" href="styles.css?v=8">
 </head>
 <body>
   <header class="topbar">
@@ -19,6 +19,7 @@
       <button id="story-mode" class="story-cta">🎮 Play: Can you beat the house?</button>
       <button id="exit-story" class="warn">✕ Exit story</button>
       <button id="help-btn" title="How this works" aria-label="How this works">?</button>
+      <button id="strategy-btn" title="Optimal strategy (game theory)" aria-label="Optimal strategy">📐 Strategy</button>
       <span class="tickno" id="tickno" title="Simulation tick (time step)">t0</span>
       <button id="pause" aria-label="Pause or resume the simulation">⏸ Pause</button>
       <button id="step" aria-label="Advance one tick">Step</button>
@@ -148,11 +149,18 @@
       <div id="dd-panel" class="dd-panel"></div>
     </div>
     <div class="coach-actions">
+      <button class="story-btn coach-toggle on" id="coach-toggle" title="Toggle live coaching">🎓 Coach: ON</button>
+      <span class="coach-spacer"></span>
       <button class="story-btn" id="coach-walk">🚶 Walk away</button>
       <button class="story-btn primary" id="coach-lockin">Lock in my bet ▶</button>
     </div>
   </div>
   <div id="story-modal" class="story-modal">
+    <div class="story-card"></div>
+  </div>
+
+  <!-- game-theory strategy primer -->
+  <div id="strategy-modal" class="story-modal">
     <div class="story-card"></div>
   </div>
 
@@ -190,14 +198,14 @@
     <span class="ver" id="ver"></span>
   </footer>
 
-  <script src="js/engine.js?v=7"></script>
-  <script src="js/bots.js?v=7"></script>
-  <script src="js/scenarios.js?v=7"></script>
-  <script src="js/surveillance.js?v=7"></script>
-  <script src="js/story.js?v=7"></script>
-  <script src="js/replay.js?v=7"></script>
-  <script src="js/ui.js?v=7"></script>
-  <script src="js/main.js?v=7"></script>
-  <script src="js/smoketest.js?v=7"></script>
+  <script src="js/engine.js?v=8"></script>
+  <script src="js/bots.js?v=8"></script>
+  <script src="js/scenarios.js?v=8"></script>
+  <script src="js/surveillance.js?v=8"></script>
+  <script src="js/story.js?v=8"></script>
+  <script src="js/replay.js?v=8"></script>
+  <script src="js/ui.js?v=8"></script>
+  <script src="js/main.js?v=8"></script>
+  <script src="js/smoketest.js?v=8"></script>
 </body>
 </html>

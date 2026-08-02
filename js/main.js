@@ -99,6 +99,8 @@ function wireControls() {
   $('#exit-story').onclick = () => storyExit();
   $('#coach-lockin').onclick = () => storyLockIn();
   $('#coach-walk').onclick = () => storyWalkAway();
+  $('#coach-toggle').onclick = () => storyToggleCoach();
+  $('#strategy-btn').onclick = () => showStrategy();
 
   // primer / framing modal
   const primer = $('#primer-modal');

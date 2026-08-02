@@ -11,6 +11,7 @@ const STORY = {
     active: false, phase: 'off', i: -1, roundStartWealth: 0, betLocked: false,
     results: [], roundEvents: [], replay: null,
     deck: [], dd: 4, revealed: [], choice: null, outcome: null, playerSide: 'none',
+    coached: true, coachN: 0, coachTick: 0,
   },
   pool: [],
 };
@@ -181,6 +182,75 @@ STORY.pool = [
   },
 ];
 
+/* ---------------- coaching + game theory (per scenario) --------------- */
+/* tips stream live during the bet phase in guided mode; optimal = the
+   game-theoretic best play with an EV rationale, shown in the reveal.       */
+const COACH = {
+  momentum: {
+    optimal: { play: 'Walk away', ev: 'EV(any bet) < 0', why: 'One actor controls the price and can dump on longs or squeeze shorts — whichever way you lean, they take the other side. With no verifiable edge every bet is negative-EV, so folding (0) wins. Minimax: walking caps your worst case at $0.' },
+    tips: ['Watch the tape — acct_9f2 keeps buying from acct_1a7. Same owner on both sides: the volume is fake.', 'The price is vertical but there\'s no news. One wallet is lifting every offer.', '➡ React: unattributable volume isn\'t demand. Don\'t chase — walk away.'],
+  },
+  fake_news: {
+    optimal: { play: 'Fade it (Buy NO) — or walk', ev: 'EV(fade) > 0', why: 'The rare +EV spot: you can verify the "news" is unconfirmed, so you know something the chasers don\'t. Fading the spike is positive-EV; walking is 0; chasing the headline is negative-EV.' },
+    tips: ['A "BREAKING" flash spiked YES — but it traces to one anonymous account, uncorroborated.', 'That same account is quietly selling YES into the spike it created.', '➡ React: unverified news is a claim, not a fact. Fade it (Buy NO), or walk.'],
+  },
+  rule_ambiguity: {
+    optimal: { play: 'Walk away', ev: 'EV(any bet) < 0', why: 'The winning condition is undefined and the resolver profits from ruling against you. Settlement is adversarial regardless of the real event, so no side is +EV. Fold.' },
+    tips: ['The question says "launch" but never defines it — resolution is at the operator\'s discretion.', 'The operator holds a position that profits if it rules NO.', '➡ React: undefined rules + a conflicted resolver = unwinnable. Walk away.'],
+  },
+  liquidity_mirage: {
+    optimal: { play: 'Walk away (or size tiny)', ev: 'EV(sizeable bet) < 0', why: 'The displayed depth cancels on contact, so your expected fill is far worse than the screen — that slippage alone makes even a "correct" bet negative-EV. If you must trade, size tiny; best is to pass.' },
+    tips: ['The book looks deep, but that size is one account\'s — and it cancels when price approaches.', 'Recent large orders filled far worse than the book implied.', '➡ React: displayed liquidity isn\'t guaranteed. Don\'t size in — walk away.'],
+  },
+  oracle: {
+    optimal: { play: 'Walk away', ev: 'EV(any bet) < 0', why: 'A single operator-controlled oracle can settle whichever way beats you, and an insider already holds the other side. The game is negative-sum for you regardless of the price. Don\'t play.' },
+    tips: ['Resolution comes from one operator-controlled source — no backup oracle.', 'An insider is loading the opposite of the 86% consensus.', '➡ React: consensus means nothing if the settler can lie. Walk away.'],
+  },
+  exit: {
+    optimal: { play: 'Walk away', ev: 'EV(any bet) < 0', why: 'You don\'t control your downside: fees can change, the price can be moved, and the exit can be frozen. When the counterparty controls your exit, no entry is +EV. Fold.' },
+    tips: ['Fees were quietly raised ~20× — every trade bleeds to the house.', 'The operator can freeze withdrawals unilaterally — you may not be able to exit.', '➡ React: if you can\'t trust the fees or the exit, don\'t enter. Walk away.'],
+  },
+};
+
+const STRATEGY = {
+  title: 'The winning strategy is knowing when not to play',
+  points: [
+    ['🎲', 'It\'s negative-sum for the uninformed.', 'You\'re usually trading against someone who knows more or controls more — the price, the oracle, or the exit. An uninformed bet against an informed adversary is negative expected value.'],
+    ['🛑', 'Walking away is the minimax move.', 'You can\'t control the outcome, but you can control your worst case. Not betting caps your loss at $0 — often the highest-EV option on the board. "The only winning move is not to play."'],
+    ['🔍', 'Only bet with a verified edge.', 'Betting is +EV only when you know something the counterparty doesn\'t and can act on it — e.g. you\'ve verified a "news" flash is fake, so you fade it.'],
+    ['🧱', 'Check the whole trust stack first.', 'Price, information, settlement, and platform can each be rigged independently. One weak layer makes the market a trap — investigate before you commit, not after.'],
+  ],
+};
+
+function optNote(r, c) {
+  const opt = COACH[r.key] && COACH[r.key].optimal; if (!opt) return '';
+  const fadedOK = r.key === 'fake_news' && c.side === 'NO';
+  if (fadedOK) return '<div class="so-you good">✓ Optimal — you had a verified edge and used it.</div>';
+  if (c.walked) return r.key === 'fake_news'
+    ? '<div class="so-you good">✓ Safe — you folded a trap (though fading was +EV here).</div>'
+    : '<div class="so-you good">✓ Optimal — you folded a −EV game.</div>';
+  return `<div class="so-you bad">✗ You bet ${c.side} into a −EV game — the optimal play was to ${r.key === 'fake_news' ? 'fade it or walk' : 'walk away'}.</div>`;
+}
+
+function storyToggleCoach() {
+  STORY.state.coached = !STORY.state.coached;
+  const b = document.getElementById('coach-toggle');
+  if (b) { b.textContent = STORY.state.coached ? '🎓 Coach: ON' : '🎓 Coach: OFF'; b.classList.toggle('on', STORY.state.coached); }
+  if (STORY.state.phase === 'bet') renderGuidance();
+}
+
+function showStrategy() {
+  const m = document.getElementById('strategy-modal'); if (!m) return;
+  m.querySelector('.story-card').innerHTML = `
+    <div class="story-tag">Game theory</div>
+    <h2>${STRATEGY.title}</h2>
+    <div class="strat-list">${STRATEGY.points.map(p => `<div class="strat-row"><span class="strat-ico">${p[0]}</span><div><b>${p[1]}</b><div class="strat-d">${p[2]}</div></div></div>`).join('')}</div>
+    <div class="story-lesson">Rule of thumb: <b>investigate first; if you can't establish an edge, walk.</b> You only bet when you can name exactly why the other side is wrong.</div>
+    <div class="story-actions"><button class="story-btn primary" onclick="hideStrategy()">Got it</button></div>`;
+  m.classList.add('show');
+}
+function hideStrategy() { const m = document.getElementById('strategy-modal'); if (m) m.classList.remove('show'); }
+
 /* --------------------------- state machine ---------------------------- */
 
 function setPhase(phase) { STORY.state.phase = phase; G.running = (phase === 'bet' || phase === 'running'); }
@@ -238,8 +308,11 @@ function storyNextRound() {
 function storyEnterBet() {
   setPhase('bet');
   hideStoryModal();
-  showCoach('Investigate with your due-diligence checks, then <b>Buy a side</b>, or <b>Walk away</b>.');
-  renderDD();
+  showCoach(STORY.state.coached
+    ? 'Guided mode: I\'ll flag the red flags live. Then <b>Buy a side</b> or <b>Walk away</b>.'
+    : 'Investigate with your due-diligence checks, then <b>Buy a side</b> or <b>Walk away</b>.');
+  STORY.state.coachN = 0; STORY.state.coachTick = 0;
+  renderGuidance();
   renderAll();
 }
 
@@ -249,7 +322,20 @@ function storyDoDD(idx) {
   if (STORY.state.dd <= 0) { toast('No due-diligence checks left this game.', 'warn'); return; }
   STORY.state.dd--;
   STORY.state.revealed.push(idx);
-  renderDD();
+  renderGuidance();
+}
+
+// Guided mode streams the coach tips live; unguided shows DD-check buttons.
+function renderGuidance() {
+  const r = curRound(); if (!r) return;
+  const dd = document.getElementById('dd-panel'); if (!dd) return;
+  if (STORY.state.coached) {
+    const tips = (COACH[r.key] && COACH[r.key].tips) || [];
+    const shown = tips.slice(0, STORY.state.coachN).map(t => `<div class="coach-tip${t.startsWith('➡') ? ' react' : ''}">${t}</div>`).join('');
+    dd.innerHTML = `<div class="dd-head">🎓 Guided — spotting the red flags live:</div><div class="coach-feed">${shown || '<div class="coach-tip dim">Watching the market…</div>'}</div>`;
+  } else {
+    renderDD();
+  }
 }
 
 function storyWalkAway() {
@@ -320,7 +406,16 @@ function buildReplay(r) {
 
 function storyFinish() { setPhase('finish'); showStoryModal(renderFinish()); renderAll(); }
 
-function storyTick() { if (STORY.state.phase === 'bet') { const r = curRound(); if (r && r.duringBet) r.duringBet(); } }
+function storyTick() {
+  if (STORY.state.phase !== 'bet') return;
+  const r = curRound(); if (!r) return;
+  if (r.duringBet) r.duringBet();
+  if (STORY.state.coached) {
+    STORY.state.coachTick++;
+    const tips = (COACH[r.key] && COACH[r.key].tips) || [];
+    if (STORY.state.coachTick % 3 === 0 && STORY.state.coachN < tips.length) { STORY.state.coachN++; renderGuidance(); }
+  }
+}
 
 /* ------------------------------ rendering ----------------------------- */
 
@@ -371,6 +466,7 @@ function renderReveal(r, c) {
     ${gotcha ? `<div class="story-gotcha">${gotcha}</div>` : ''}
     <ul class="story-bullets">${bullets}</ul>
     <div class="story-culprit">🎭 <b>${esc(r.perp.name)}</b> — ${esc(r.perp.motive)}.${bene ? ` Walked away <b class="up">+${money(bene.pnl)}</b>.` : ''}</div>
+    ${(() => { const o = COACH[r.key] && COACH[r.key].optimal; return o ? `<div class="story-optimal"><div class="so-h">🎲 Optimal play (game theory): <b>${o.play}</b> <span class="so-ev">${o.ev}</span></div><div class="so-why">${o.why}</div>${optNote(r, c)}</div>` : ''; })()}
     <div class="story-counter">↩︎ <b>Counterfactual:</b> ${r.counter ? r.counter(c) : ''}</div>
     <div class="replay">
       <div class="replay-head">▶ Replay — watch how it played out</div>
@@ -400,7 +496,7 @@ function renderFinish() {
     <div class="story-tag">Final score</div>
     <h2>${grade}</h2>
     <div class="fin-score"><div><span>Started with</span><b>${money(you.startCash)}</b></div><div class="arrow">→</div><div><span>Walked away with</span><b class="${end < you.startCash ? 'down' : 'up'}">${money(end)}</b></div></div>
-    <div class="fin-tally">🚶 Walked away from <b>${avoided}</b> · ✅ Faded correctly <b>${won}</b> · 💥 Chased into <b>${lost}</b></div>
+    <div class="fin-tally">🚶 Walked away from <b>${avoided}</b> · ✅ Faded correctly <b>${won}</b> · 💥 Chased into <b>${lost}</b><br><span class="fin-opt">🎲 Game-theory-optimal plays: <b>${avoided + won}/${STORY.state.results.length}</b></span></div>
     <div class="fin-rows">${rows}</div>
     <div class="fin-total">Net: <b class="${total < 0 ? 'down' : 'up'}">${signMoney(total)}</b> · ${esc(blurb)}</div>
     <div class="fin-risks">

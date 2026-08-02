@@ -390,3 +390,28 @@ body.story .col.right{display:none}
 .story-culprit em{font-style:normal}
 .fin-tally{text-align:center;font-size:13px;color:var(--dim);margin:10px 0} .fin-tally b{font-family:ui-monospace,monospace;color:var(--ink)}
 .fin-row em{color:var(--dimmer);font-style:normal;font-size:11px;text-transform:uppercase;letter-spacing:.04em;margin-left:6px}
+
+/* ============ coaching + game theory ========= */
+.coach-feed{display:flex;flex-direction:column;gap:5px}
+.coach-tip{background:rgba(224,179,65,.08);border:1px solid rgba(224,179,65,.22);border-radius:6px;padding:6px 9px;font-size:12px;color:#e8cf8a;line-height:1.4;animation:tipIn .3s ease}
+.coach-tip.react{background:rgba(91,214,192,.1);border-color:rgba(91,214,192,.35);color:var(--teal);font-weight:600}
+.coach-tip.dim{background:transparent;border-color:var(--line);color:var(--dimmer)}
+@keyframes tipIn{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
+.coach-toggle.on{border-color:#2b6a5f;color:var(--teal)}
+.coach-spacer{flex:1}
+
+.story-optimal{background:rgba(192,125,224,.08);border:1px solid rgba(192,125,224,.3);border-radius:8px;padding:10px 12px;margin:12px 0}
+.so-h{font-size:13.5px;color:var(--ink)}
+.so-h b{color:var(--purple)}
+.so-ev{font-family:ui-monospace,monospace;font-size:11px;color:var(--dim);margin-left:6px;background:rgba(255,255,255,.05);padding:1px 6px;border-radius:6px}
+.so-why{font-size:12.5px;color:var(--dim);line-height:1.5;margin-top:5px}
+.so-you{font-size:12.5px;font-weight:600;margin-top:7px}
+.so-you.good{color:var(--up)} .so-you.bad{color:var(--red)}
+
+.strat-list{display:flex;flex-direction:column;gap:10px;margin:14px 0}
+.strat-row{display:flex;gap:12px;align-items:flex-start}
+.strat-ico{font-size:20px;flex:0 0 auto}
+.strat-row b{font-size:14px}
+.strat-d{font-size:13px;color:var(--dim);line-height:1.5;margin-top:2px}
+.fin-opt{color:var(--purple);font-size:12px}
+#strategy-btn{font-size:12px}
