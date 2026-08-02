@@ -97,6 +97,8 @@ function wireControls() {
 
   $('#story-mode').onclick = () => storyStart();
   $('#exit-story').onclick = () => storyExit();
+  $('#coach-lockin').onclick = () => storyLockIn();
+  $('#coach-walk').onclick = () => storyWalkAway();
 
   // primer / framing modal
   const primer = $('#primer-modal');

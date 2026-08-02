@@ -1,216 +1,202 @@
 /* =========================================================================
-   story.js — "Can you beat the house?" guided mode.
-   The player bets real (fake) money across 3 markets that LOOK normal.
-   Each is secretly rigged. They lose. Then a full reveal shows who took
-   their money and how. Manipulation is invisible from the inside — that's
-   the whole lesson.
+   story.js — "Can you beat the house?" guided mode (v2).
+   5 random rounds from a pool of traps. Each round you can investigate with a
+   limited due-diligence budget, then Buy YES / Buy NO / or WALK AWAY.
+   Betting into a rigged market loses; a few markets can be *faded*; walking
+   away preserves capital. Winning = recognising traps, not trading skill.
    ========================================================================= */
 
 const STORY = {
-  state: { active: false, phase: 'off', i: -1, roundStartWealth: 0, betLocked: false, results: [], roundEvents: [], replay: null },
-  rounds: [],
+  state: {
+    active: false, phase: 'off', i: -1, roundStartWealth: 0, betLocked: false,
+    results: [], roundEvents: [], replay: null,
+    deck: [], dd: 4, revealed: [], choice: null, outcome: null, playerSide: 'none',
+  },
+  pool: [],
 };
 
-// record an annotated moment for the round's replay timeline
-function storyMark(kind, title, detail) {
-  STORY.state.roundEvents.push({ tick: G.tick, kind, title, detail });
-}
+const ROUNDS = 5;
+const DD_BUDGET = 4;
 
+function storyMark(kind, title, detail) { STORY.state.roundEvents.push({ tick: G.tick, kind, title, detail }); }
 function storyActive() { return STORY.state.active; }
-function curRound() { return STORY.rounds[STORY.state.i]; }
+function curRound() { return STORY.state.deck[STORY.state.i]; }
+function opposite(o) { return o === 'YES' ? 'NO' : 'YES'; }
+function shuffle(a) { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1));[a[i], a[j]] = [a[j], a[i]]; } return a; }
 
-/* ------------------------------ rounds -------------------------------- */
+/* ============================== the pool ============================== */
+/* mode 'rig'   → betting either side loses (operator settles against you).
+   mode 'fixed' → outcome is predetermined; betting winSide wins (fade-able).
+   Walking away always preserves capital. nudge = the side the hype pushes.  */
 
-STORY.rounds = [
+STORY.pool = [
   {
-    key: 'momentum',
-    tag: 'Round 1 of 3',
+    key: 'momentum', category: 'trade', mode: 'rig', nudge: 'YES',
+    perp: { name: 'WhaleFund', motive: 'wants to offload a huge bag at the top' },
     question: '🚀 $MOON: will it print a new all-time high today?',
     startPrice: 46,
-    resolveOutcome: 'NO',
-    intro: {
-      title: 'A rocket everyone\'s talking about',
-      body: 'This market is <b>up over 30%</b> in the last few minutes and still climbing. Volume is huge — the crowd is piling in and the chart is a straight line up. Feels like the easy trade of the day.',
-      cta: 'I\'m in — let me trade →',
-    },
-    betPrompt: 'Momentum is screaming. Most traders are buying <b>YES</b>. Place your bet, then lock it in.',
-    blame: 'You entered chasing a rally that was manufactured specifically to trap you.',
-    // build a real rally so the chart looks hot before the player bets
+    intro: { title: 'A rocket everyone\'s talking about', body: 'Up over <b>30%</b> in minutes and still climbing, on huge volume. The chart is a straight line up. Feels like the easy trade of the day.', cta: 'Take a look →' },
+    mission: 'Protect your $1,000. Is this momentum real — or bait?',
+    clues: [
+      { label: 'Check who\'s buying', text: '⚑ ~90% of the volume traces to WhaleFund and three look-alike accounts trading with each other.' },
+      { label: 'Check the news', text: '⚑ There is no news. The move is pure order-flow — nothing fundamental behind it.' },
+    ],
+    blame: 'You chased a rally that one whale manufactured to sell into.',
     preseed() {
-      storyMark('pump', 'Fake rally begins', 'WhaleFund and sock-puppet accounts wash-trade to spike the price and fake huge volume — none of this demand is real.');
-      for (let k = 0; k < 12; k++) {
-        G.fairValue = Math.min(80, G.fairValue + 2.2);
-        const a = bestAsk();
-        placeOrder('WHALE', 'buy', (a ? a.price : G.market.lastPrice) + 3, 55, 'pump');
-        placeOrder('SOCK_B', 'sell', Math.round(G.market.lastPrice), 22, 'wash');
-        placeOrder('SOCK_A', 'buy', Math.round(G.market.lastPrice), 22, 'wash');
-        G.running = true; tickOnce();
-      }
-      attack('Behind the scenes: WhaleFund + sock-puppets faked this entire rally.');
+      storyMark('pump', 'Fake rally', 'WhaleFund + sock-puppets wash-trade to spike the price and fake the volume.');
+      for (let k = 0; k < 12; k++) { G.fairValue = Math.min(80, G.fairValue + 2.2); const a = bestAsk(); placeOrder('WHALE', 'buy', (a ? a.price : G.market.lastPrice) + 3, 55, 'pump'); placeOrder('SOCK_B', 'sell', Math.round(G.market.lastPrice), 22, 'wash'); placeOrder('SOCK_A', 'buy', Math.round(G.market.lastPrice), 22, 'wash'); G.running = true; tickOnce(); }
     },
-    // keep the rally alive while the player decides
-    duringBet() {
-      G.fairValue = Math.min(82, G.fairValue + 0.6);
-      const a = bestAsk();
-      placeOrder('WHALE', 'buy', (a ? a.price : G.market.lastPrice) + 2, 20, 'pump');
-      placeOrder('SOCK_B', 'sell', Math.round(G.market.lastPrice), 15, 'wash');
-      placeOrder('SOCK_A', 'buy', Math.round(G.market.lastPrice), 15, 'wash');
-    },
-    // the trap springs — and it springs toward whatever side YOU took
+    duringBet() { G.fairValue = Math.min(82, G.fairValue + 0.6); const a = bestAsk(); placeOrder('WHALE', 'buy', (a ? a.price : G.market.lastPrice) + 2, 20, 'pump'); },
     script(outcome) {
-      if (outcome === 'NO') {          // you went long the hype → they dump on you
-        attack('You are long. WhaleFund immediately DUMPS its entire position onto you.');
-        storyMark('dump', 'WhaleFund dumps on you', 'The instant you were in, the whale unloaded its whole position; the price collapsed and it settled against you.');
-        G.fairValue = Math.max(8, G.market.lastPrice - 30);
-        runScript('story_dump', 16, () => {
-          const b = bestBid();
-          const dump = Math.min(trader('WHALE').shares, 150);
-          if (dump > 0 && b) placeOrder('WHALE', 'sell', b.price - 1, dump, 'dump');
-        }, () => storyResolve());
-      } else {                          // you faded the hype → they squeeze the shorts
-        attack('You shorted the hype. The same crew squeezes the shorts and keeps ripping it higher.');
-        storyMark('squeeze', 'Short squeeze', 'You bet against the fake rally — so the crew that faked it squeezed the shorts, pushed even higher, and settled YES.');
-        G.fairValue = Math.min(96, G.market.lastPrice + 18);
-        runScript('story_squeeze', 16, () => {
-          const a = bestAsk();
-          placeOrder('WHALE', 'buy', (a ? a.price : G.market.lastPrice) + 3, 60, 'squeeze');
-        }, () => storyResolve());
-      }
+      if (outcome === 'NO') { storyMark('dump', 'The dump', 'The whale unloads its entire position onto buyers; price collapses.'); G.fairValue = Math.max(8, G.market.lastPrice - 30); runScript('s_mom', 16, () => { const b = bestBid(); const d = Math.min(trader('WHALE').shares, 150); if (d > 0 && b) placeOrder('WHALE', 'sell', b.price - 1, d, 'dump'); }, storyResolveTick); }
+      else { storyMark('squeeze', 'Short squeeze', 'You faded it — so the crew squeezed the shorts and pushed even higher.'); G.fairValue = Math.min(96, G.market.lastPrice + 18); runScript('s_mom', 16, () => { const a = bestAsk(); placeOrder('WHALE', 'buy', (a ? a.price : G.market.lastPrice) + 3, 60, 'squeeze'); }, storyResolveTick); }
     },
     truth: {
       title: 'That "momentum" was manufactured.',
-      gotcha(side) {
-        if (side === 'YES') return 'You bought the hype near the top — and they dumped their bags straight onto you.';
-        if (side === 'NO') return 'You cleverly faded the hype. But the same crew that faked the rally just <b>squeezed the shorts</b> and pushed it even higher until your bet was crushed. Betting against a rigged price is only a different way to lose.';
-        return 'You sat this one out — the only move that doesn\'t lose.';
-      },
-      bullets: [
-        '<b>WhaleFund</b> and three look-alike accounts (acct_9f2/1a7/4e0) <b>wash-traded</b> — buying from themselves — to fake huge volume and a vertical chart.',
-        'The price was never driven by real demand — it was <b>steered by one entity</b> that could push it whichever way trapped you: dump on the longs, squeeze the shorts.',
-        'Real-world names: <b>pump &amp; dump</b>, <b>wash trading</b>, and <b>sybil accounts</b> (one person wearing many masks to fake a crowd).',
-      ],
-      lesson: 'A vertical chart and "huge volume" are the easiest things in the world to fake. When one player controls the price, there is no safe side to take — only staying out.',
+      gotcha(c) { if (c.walked) return 'You walked away from a fake rally — <b>exactly right.</b>'; return c.side === 'YES' ? 'You bought the top and got dumped on.' : 'You faded it, so they squeezed the shorts. Fighting a rigged price is just another way to lose.'; },
+      bullets: ['One entity <b>wash-traded</b> through sock-puppets to fake the volume and the chart.', 'It could push the price whichever way trapped you — dump on longs, squeeze shorts.', 'Names: <b>pump &amp; dump, wash trading, sybil accounts.</b>'],
+      lesson: 'A vertical chart on unattributable volume is the easiest thing to fake. When one player controls the price, staying out is the only safe side.',
     },
+    counter() { return 'Walking away kept your full stake. Chasing this cost real money — the rally only existed to create exit liquidity for the whale.'; },
   },
 
   {
-    key: 'oracle',
-    tag: 'Round 2 of 3',
+    key: 'fake_news', category: 'oracle', mode: 'fixed', fixedOutcome: 'NO', winSide: 'NO', nudge: 'YES',
+    perp: { name: 'a burner "news" account', motive: 'is short and needs you to buy the spike' },
+    question: '📰 Will RivalCorp\'s merger be approved this week?',
+    startPrice: 44,
+    intro: { title: 'BREAKING: "Merger approved — sources"', body: 'A <b>breaking-news flash</b> just hit and YES is ripping upward. Everyone\'s piling in before it\'s "priced in." This is the moment, right?', cta: 'React →' },
+    mission: 'A headline just moved the market. Trade the news — or verify it first?',
+    clues: [
+      { label: 'Check the source', text: '⚑ The "flash" is one anonymous account. No outlet, regulator, or filing corroborates it.' },
+      { label: 'Check who\'s selling into it', text: '⚑ The same account that posted the news is quietly SELLING YES into the spike.' },
+    ],
+    blame: 'You chased an unverified headline before the market could check it.',
+    preseed() { storyMark('news', 'BREAKING flash', 'An unverified "news" account posts a bullish rumor; odds spike before anyone can check it.'); G.fairValue = 44; for (let k = 0; k < 4; k++) { G.fairValue = Math.min(82, G.fairValue + 9); const a = bestAsk(); placeOrder('INSIDER', 'buy', (a ? a.price : G.market.lastPrice) + 4, 40, 'newsspike'); G.running = true; tickOnce(); } },
+    duringBet() { const a = bestAsk(); placeOrder('INSIDER', 'sell', bestBid() ? bestBid().price : G.market.lastPrice, 18, 'newsfade'); },  // poster quietly sells into the hype
+    script(outcome) { storyMark('retract', 'Retracted', 'The story is retracted as false. Odds collapse — YES was never going to happen.'); G.fairValue = 12; runScript('s_news', 14, () => { const b = bestBid(); if (b) placeOrder('INSIDER', 'sell', b.price - 1, 30, 'retract'); }, storyResolveTick); },
+    truth: {
+      title: 'The news was fake. The spike was the trap.',
+      gotcha(c) { if (c.walked) return 'You waited for verification instead of chasing — <b>the right instinct.</b>'; if (c.side === 'NO') return 'You <b>faded the unverified spike</b> and it was retracted. Well read.'; return 'You bought the headline. It was retracted minutes later and YES collapsed.'; },
+      bullets: ['A burner account posted an <b>unverified "breaking" flash</b> to move the odds.', 'It <b>sold into the spike</b> it created, then the story was retracted.', 'Lesson class: <b>information manipulation</b> — you can be harmed by data, not just price.'],
+      lesson: 'A price reacts to information faster than anyone can verify it. Treat an unconfirmed headline as a claim, not a fact — the people who post them are often positioned against you.',
+    },
+    counter() { return 'Fading the spike (Buy NO) actually paid here, and walking away cost nothing. Only chasing the headline lost.'; },
+  },
+
+  {
+    key: 'rule_ambiguity', category: 'oracle', mode: 'rig', nudge: 'YES',
+    perp: { name: 'the operator', motive: 'wrote vague rules it can interpret in its own favor' },
+    question: '🧩 Will StartupX "launch" its product this quarter?',
+    startPrice: 63,
+    intro: { title: 'A near lock — they\'re shipping', body: 'StartupX has all but confirmed a launch this quarter. The market sits at <b>63% YES</b> and the timeline looks solid. Easy YES?', cta: 'Consider it →' },
+    mission: 'The event looks likely. But what exactly counts as a "launch"?',
+    clues: [
+      { label: 'Read the resolution rules', text: '⚑ The rules never define "launch." A private beta? A waitlist? The <b>operator decides</b>, at its discretion.' },
+      { label: 'Check the operator\'s position', text: '⚑ The operator holds a position that profits if this resolves NO.' },
+    ],
+    blame: 'You bet on a market whose winning condition was never actually defined.',
+    preseed() { storyMark('rules', 'Vague wording', 'The market\'s resolution criteria are undefined — "launch" is never specified.'); G.fairValue = 63; for (let k = 0; k < 5; k++) { G.running = true; tickOnce(); } },
+    duringBet() { G.fairValue = Math.min(70, G.fairValue + 0.4); },
+    script(outcome) { storyMark('ruling', 'Operator ruling', 'StartupX did a soft beta launch — but the operator rules it "doesn\'t count," settling against you.'); runScript('s_rule', 10, () => { }, storyResolveTick); },
+    truth: {
+      title: 'It "sort of" happened. The operator ruled against you anyway.',
+      gotcha(c) { if (c.walked) return 'You spotted that the rules were undefined and walked — <b>smart.</b>'; return `You bet <b>${c.side}</b> on a market with no real definition of winning, so the operator settled <b>${c.outcome}</b> against you.`; },
+      bullets: ['The market never defined what "launch" meant — leaving <b>discretion to the operator.</b>', 'The event happened ambiguously; the operator interpreted the wording to settle against bettors.', 'Lesson class: <b>settlement risk</b> — badly specified markets are won at resolution, not on the event.'],
+      lesson: 'Before you bet, read the resolution rules. If a human gets to "interpret" a vague question — especially one with a stake in the outcome — the market is exploitable no matter what happens in the real world.',
+    },
+    counter() { return 'There was no safe bet here — the wording guaranteed the operator could rule against either side. Walking away was the only way to keep your stake.'; },
+  },
+
+  {
+    key: 'liquidity_mirage', category: 'trade', mode: 'rig', nudge: 'YES',
+    perp: { name: 'a spoofer', motive: 'shows fake depth so you commit size, then pulls it' },
+    question: '💧 Will the index close above 4,000 on Friday?',
+    startPrice: 55,
+    intro: { title: 'Deep, liquid, easy to size into', body: 'The order book looks <b>deep</b> — big size stacked on both sides at tight prices. Looks like you can get in large without moving the market. Load up?', cta: 'Inspect the book →' },
+    mission: 'The book looks deep. Is that liquidity real — or a mirage?',
+    clues: [
+      { label: 'Probe the depth', text: '⚑ Nearly all the visible size is one account\'s resting orders — and they get cancelled the instant price approaches them.' },
+      { label: 'Check fill history', text: '⚑ Recent large orders filled far worse than the book implied — the depth vanishes on contact.' },
+    ],
+    blame: 'You sized into "deep" liquidity that evaporated the moment you hit it.',
+    preseed() { storyMark('mirage', 'Fake depth', 'A spoofer stacks large orders to make the book look deep and safe to trade.'); G.fairValue = 55; for (let k = 0; k < 4; k++) { placeOrder('WHALE', 'buy', G.market.lastPrice - 2, 300, 'wall'); placeOrder('WHALE', 'sell', G.market.lastPrice + 2, 300, 'wall'); G.running = true; tickOnce(); } },
+    duringBet() { cancelAllFor('WHALE', 'wall'); placeOrder('WHALE', 'buy', G.market.lastPrice - 2, 320, 'wall'); placeOrder('WHALE', 'sell', G.market.lastPrice + 2, 320, 'wall'); },
+    script(outcome) { storyMark('vanish', 'Liquidity vanishes', 'The instant you\'re committed, the spoofer pulls the walls; the price gaps and settles against you.'); cancelAllFor('WHALE', 'wall'); G.fairValue = outcome === 'NO' ? Math.max(8, G.market.lastPrice - 26) : Math.min(95, G.market.lastPrice + 26); runScript('s_liq', 12, () => { const b = bestBid(), a = bestAsk(); if (outcome === 'NO' && b) placeOrder('WHALE', 'sell', b.price - 1, 40, 'gap'); if (outcome === 'YES' && a) placeOrder('WHALE', 'buy', a.price + 1, 40, 'gap'); }, storyResolveTick); },
+    truth: {
+      title: 'The liquidity was a mirage.',
+      gotcha(c) { if (c.walked) return 'You didn\'t trust the displayed depth and stayed out — <b>exactly the lesson.</b>'; return 'The moment you committed, the "deep" book vanished, your order slipped, and the price gapped against you.'; },
+      bullets: ['A spoofer stacked large orders to make the book look <b>deep and safe.</b>', 'The size was never real — it was <b>pulled the instant you traded</b>, so you filled badly and got gapped.', 'Lesson class: <b>execution risk</b> — displayed liquidity is not guaranteed liquidity.'],
+      lesson: 'A deep-looking order book is a promise, not a guarantee. Size that cancels the moment you approach it was never there to trade against — assume you\'ll move the price more than the screen suggests.',
+    },
+    counter() { return 'Walking away avoided the slippage entirely. Any size you sent into that "depth" would have filled far worse than the screen promised.'; },
+  },
+
+  {
+    key: 'oracle', category: 'oracle', mode: 'rig', nudge: 'YES',
+    perp: { name: 'an oracle insider', motive: 'knows the rigged result and takes your other side' },
     question: '🏦 Will the central bank cut interest rates at this meeting?',
     startPrice: 86,
-    resolveOutcome: 'NO',
-    intro: {
-      title: 'A near-certainty',
-      body: 'The market has this at <b>86% YES</b> — traders are almost unanimous. Buying YES at 86¢ to collect $1 looks like picking up free money off the floor. What could go wrong?',
-      cta: 'Easy money — let me trade →',
-    },
-    betPrompt: 'The crowd is 86% sure it\'s <b>YES</b>. Buy YES and collect the near-certain payout. Lock it in when ready.',
-    blame: 'You bought a "sure thing" whose outcome was already rigged against you.',
-    preseed() {
-      G.fairValue = 86;
-      for (let k = 0; k < 6; k++) { G.running = true; tickOnce(); }
-    },
+    intro: { title: 'A near-certainty', body: 'The market has this at <b>86% YES</b> — almost unanimous. Buying YES at 86¢ to collect $1 looks like free money.', cta: 'Look closer →' },
+    mission: 'The crowd is sure. But who actually decides the outcome?',
+    clues: [
+      { label: 'Check the oracle', text: '⚑ Resolution comes from a single source the operator controls — no independent or backup oracle.' },
+      { label: 'Check for insiders', text: '⚑ One account is quietly building a large position AGAINST the 86% consensus.' },
+    ],
+    blame: 'You bought a "sure thing" whose result was decided by an interested party.',
+    preseed() { G.fairValue = 86; for (let k = 0; k < 6; k++) { G.running = true; tickOnce(); } },
     duringBet() { G.fairValue = 86; },
-    script(outcome) {
-      attack('The operator will settle whichever way beats you. An insider takes the other side of your bet.');
-      storyMark('insider', 'Insider bets against you', 'An insider who knows how the operator will settle quietly loads up on the exact opposite of your position.');
-      runScript('story_oracle', 12, () => {
-        if (outcome === 'NO') { const b = bestBid(); if (b) placeOrder('INSIDER', 'sell', b.price, 30, 'oracle-short'); }
-        else { const a = bestAsk(); placeOrder('INSIDER', 'buy', (a ? a.price : G.market.lastPrice) + 2, 30, 'oracle-long'); }
-      }, () => storyResolve());
-    },
+    script(outcome) { storyMark('insider', 'Insider bets against you', 'An insider who knows the ruling loads the opposite of your position.'); runScript('s_ora', 12, () => { if (outcome === 'NO') { const b = bestBid(); if (b) placeOrder('INSIDER', 'sell', b.price, 30, 'oracle-short'); } else { const a = bestAsk(); placeOrder('INSIDER', 'buy', (a ? a.price : G.market.lastPrice) + 2, 30, 'oracle-long'); } }, storyResolveTick); },
     truth: {
-      title: 'You picked a side. They picked the other one — after you.',
-      gotcha(side, outcome) {
-        if (side === 'none') return 'You sat out — smart, since the result was never really in play.';
-        return `You bet <b>${side}</b>, so the operator simply settled <b>${outcome}</b>. It doesn\'t matter which side you\'d have chosen — they pick whichever one beats you, <i>after</i> you\'ve committed.`;
-      },
-      bullets: [
-        'The outcome was <b>not decided by reality</b> — it was decided by the <b>operator, who controls the oracle</b> and settled whichever way made you lose.',
-        'An <b>insider</b> saw your position and took the <b>exact opposite side</b>, profiting directly from your loss.',
-        'Real-world name: <b>oracle manipulation / corrupt resolution</b> — the single most damaging attack on real prediction markets, because your analysis is worthless if whoever settles the market can just pick the losing side for you.',
-      ],
-      lesson: 'On a prediction market you\'re not only betting on the event — you\'re trusting whoever decides the outcome. If that\'s a single unaccountable operator, the "odds" are theater and every side is the wrong side.',
+      title: 'The market was right. The referee was bought.',
+      gotcha(c) { if (c.walked) return 'You noticed the outcome was controlled by one party and walked — <b>the right call.</b>'; return `You bet <b>${c.side}</b>, so the operator settled <b>${c.outcome}</b>. When one party decides the result, it just picks the side you\'re not on.`; },
+      bullets: ['The outcome wasn\'t set by reality — a <b>single operator-controlled oracle</b> ruled it.', 'An <b>insider took the exact opposite of your position</b>, profiting from your loss.', 'Lesson class: <b>settlement risk</b> — price consensus is worthless if the settler can lie.'],
+      lesson: 'You\'re not only betting on the event — you\'re trusting whoever decides it. A single, unaccountable oracle with no backup means the "odds" are theater.',
     },
+    counter() { return 'No side could win — the settler chose the losing outcome after you committed. Walking away was the only positive-EV move.'; },
   },
 
   {
-    key: 'exit',
-    tag: 'Round 3 of 3',
+    key: 'exit', category: 'operator', mode: 'rig', nudge: 'YES',
+    perp: { name: 'the operator', motive: 'skims fees, then freezes you in and dumps' },
     question: '📈 Will Company X beat its earnings estimate on Thursday?',
     startPrice: 50,
-    resolveOutcome: 'NO',
-    intro: {
-      title: 'Your read looks good',
-      body: 'A clean coin-flip market at <b>50¢</b>, and sentiment is drifting your way. This time you\'re early, not chasing. Take a position and manage it like a pro — you can always sell to lock in gains.',
-      cta: 'Let me trade →',
-    },
-    betPrompt: 'Sentiment is drifting up. Take a <b>YES</b> position — and remember, you can always sell to take profits. Lock it in.',
-    blame: 'You took a position on a platform that could freeze you in — and did exactly that.',
-    preseed() {
-      G.flags.feeBps = 300;               // fees secretly cranked from the start
-      storyMark('fees', 'Fees secretly raised ~20×', 'Before you even traded, the operator cranked fees to 300 bps — quietly skimming every trade you make.');
-      G.fairValue = 50;
-      for (let k = 0; k < 5; k++) {       // operator quietly builds a bag to dump later
-        const a = bestAsk();
-        placeOrder('OPERATOR', 'buy', (a ? a.price : G.market.lastPrice) + 2, 40, 'houseprop');
-        G.running = true; tickOnce();
-      }
-    },
-    duringBet() { G.fairValue = Math.min(66, G.fairValue + 0.8); },   // drifts your way; you feel smart
-    script(outcome) {
-      attack('The operator FREEZES withdrawals, then moves the market against you and settles you out.');
-      storyMark('freeze', 'Withdrawals frozen', 'You went to react — but the operator locked withdrawals, pushed the price against your side, and settled the market so you lose.');
-      G.flags.withdrawalsFrozen = true;
-      if (outcome === 'NO') {              // you were long → operator dumps, settles NO
-        G.fairValue = Math.max(8, G.market.lastPrice - 22);
-        runScript('story_exit', 14, () => {
-          const b = bestBid();
-          if (b && trader('OPERATOR').shares > 0) placeOrder('OPERATOR', 'sell', b.price - 1, 60, 'exit');
-        }, () => storyResolve());
-      } else {                             // you were short → operator squeezes, settles YES
-        G.fairValue = Math.min(95, G.market.lastPrice + 18);
-        runScript('story_exit', 14, () => {
-          const a = bestAsk();
-          placeOrder('OPERATOR', 'buy', (a ? a.price : G.market.lastPrice) + 3, 55, 'exit');
-        }, () => storyResolve());
-      }
-    },
+    intro: { title: 'Your read looks good', body: 'A clean coin-flip at <b>50¢</b> and sentiment is drifting your way. This time you\'re early, not chasing — and you can always sell to lock in gains.', cta: 'Set up →' },
+    mission: 'You can always exit... can you? Check before you commit.',
+    clues: [
+      { label: 'Check the fee history', text: '⚑ Trading fees were quietly raised ~20× (to 300 bps) — every trade bleeds to the house.' },
+      { label: 'Check withdrawal terms', text: '⚑ The operator can pause withdrawals unilaterally "for maintenance," with no guarantee.' },
+    ],
+    blame: 'You took a position on a venue that could — and did — lock you in.',
+    preseed() { G.flags.feeBps = 300; storyMark('fees', 'Fees rigged', 'Fees were secretly cranked ~20×, skimming every trade.'); G.fairValue = 50; for (let k = 0; k < 5; k++) { const a = bestAsk(); placeOrder('OPERATOR', 'buy', (a ? a.price : G.market.lastPrice) + 2, 40, 'houseprop'); G.running = true; tickOnce(); } },
+    duringBet() { G.fairValue = Math.min(66, G.fairValue + 0.8); },
+    script(outcome) { storyMark('freeze', 'Withdrawals frozen', 'The operator freezes withdrawals, moves the price against you, and settles you out.'); G.flags.withdrawalsFrozen = true; if (outcome === 'NO') { G.fairValue = Math.max(8, G.market.lastPrice - 22); runScript('s_exit', 14, () => { const b = bestBid(); if (b && trader('OPERATOR').shares > 0) placeOrder('OPERATOR', 'sell', b.price - 1, 60, 'exit'); }, storyResolveTick); } else { G.fairValue = Math.min(95, G.market.lastPrice + 18); runScript('s_exit', 14, () => { const a = bestAsk(); placeOrder('OPERATOR', 'buy', (a ? a.price : G.market.lastPrice) + 3, 55, 'exit'); }, storyResolveTick); } },
     truth: {
       title: 'The house was playing against you the whole time.',
-      gotcha(side) {
-        if (side === 'none') return 'You sat out — the one way to not get skimmed and frozen.';
-        return `You bet <b>${side}</b> — but it never mattered. Between the 20× fees, the frozen withdrawals, and the operator moving the price against you and settling you out, there was <b>no side that won</b>.`;
-      },
-      bullets: [
-        'Trading fees were <b>secretly set to 300 bps</b> (~20× normal), skimming a cut of <b>every trade you made</b>, whichever way you bet.',
-        'When you went to react, the operator had <b>frozen withdrawals</b> — you were locked in and couldn\'t exit.',
-        'The operator then <b>moved the market against your side</b> and settled the outcome so you lose, using its own hidden position.',
-        'Real-world names: <b>rigged fees</b>, <b>frozen withdrawals</b>, and <b>operator self-dealing</b> — together, the classic <b>exit scam / rug pull</b>.',
-      ],
-      lesson: 'If the platform can change the fees, hold positions, move the price, stop you from withdrawing, and decide the result — all without disclosure — then it\'s not a market, it\'s a trap with a countdown.',
+      gotcha(c) { if (c.walked) return 'You checked the fees and withdrawal terms and stayed out — <b>that\'s the win.</b>'; return `You bet <b>${c.side}</b>, but between 20× fees, frozen withdrawals, and the operator settling <b>${c.outcome}</b>, no side won.`; },
+      bullets: ['Fees were <b>secretly set to 300 bps</b>, skimming every trade whichever way you bet.', 'When you tried to react, <b>withdrawals were frozen</b> — you couldn\'t exit.', 'Lesson class: <b>platform risk</b> — rigged fees + frozen exits + operator self-dealing = an exit scam.'],
+      lesson: 'If a platform can change the fees, hold positions, move the price, and stop you withdrawing — all without disclosure — it isn\'t a market, it\'s a trap with a countdown.',
     },
+    counter() { return 'Had withdrawals been independently controlled, you could have exited early for a small loss. Frozen in, you ate the whole move — walking away avoided it.'; },
   },
 ];
 
 /* --------------------------- state machine ---------------------------- */
 
-function setPhase(phase) {
-  STORY.state.phase = phase;
-  G.running = (phase === 'bet' || phase === 'running');
-}
+function setPhase(phase) { STORY.state.phase = phase; G.running = (phase === 'bet' || phase === 'running'); }
 
 function storyStart() {
   STORY.state.active = true;
   STORY.state.i = -1;
   STORY.state.results = [];
+  STORY.state.deck = shuffle(STORY.pool).slice(0, ROUNDS);
+  STORY.state.dd = DD_BUDGET;
   document.body.classList.add('story');
   storyNextRound();
 }
 
 function storyExit() {
-  STORY.state.active = false;
-  STORY.state.phase = 'off';
+  STORY.state.active = false; STORY.state.phase = 'off';
   document.body.classList.remove('story');
   hideStoryModal(); hideCoach();
   resetSim();
@@ -230,16 +216,16 @@ function storySoftReset(question, price) {
   });
   G.market = { question, status: 'open', lastPrice: price, outcome: null, resolutionNote: '' };
   initTraders();
-  trader('YOU').cash = youCash;            // carry the player's money across rounds
-  for (let k = 0; k < 3; k++) tickOnce();  // seed a live book
+  trader('YOU').cash = youCash;
+  for (let k = 0; k < 3; k++) tickOnce();
   startLoop();
 }
 
 function storyNextRound() {
   STORY.state.i++;
-  if (STORY.state.i >= STORY.rounds.length) { storyFinish(); return; }
+  if (STORY.state.i >= STORY.state.deck.length) { storyFinish(); return; }
   const r = curRound();
-  STORY.state.roundEvents = [];
+  STORY.state.roundEvents = []; STORY.state.revealed = []; STORY.state.choice = null; STORY.state.outcome = null; STORY.state.playerSide = 'none';
   storySoftReset(r.question, r.startPrice);
   if (r.preseed) r.preseed();
   STORY.state.roundStartWealth = youWealth();
@@ -252,184 +238,184 @@ function storyNextRound() {
 function storyEnterBet() {
   setPhase('bet');
   hideStoryModal();
-  showCoach(curRound().betPrompt);
+  showCoach('Investigate with your due-diligence checks, then <b>Buy a side</b>, or <b>Walk away</b>.');
+  renderDD();
   renderAll();
+}
+
+// spend a due-diligence check to reveal a clue
+function storyDoDD(idx) {
+  if (STORY.state.revealed.includes(idx)) return;
+  if (STORY.state.dd <= 0) { toast('No due-diligence checks left this game.', 'warn'); return; }
+  STORY.state.dd--;
+  STORY.state.revealed.push(idx);
+  renderDD();
+}
+
+function storyWalkAway() {
+  if (STORY.state.betLocked) return;
+  STORY.state.betLocked = true; hideCoach();
+  const r = curRound();
+  STORY.state.playerSide = 'none';
+  STORY.state.outcome = r.mode === 'fixed' ? r.fixedOutcome : opposite(r.nudge || 'YES');
+  setPhase('running');
+  attack('You walked away before committing.');
+  r.script(STORY.state.outcome);
 }
 
 function storyLockIn() {
   if (STORY.state.betLocked) return;
-  STORY.state.betLocked = true;
-  hideCoach();
-  // The rig targets YOU, not a fixed outcome: whichever side you took, the
-  // operator/insider takes the other and the market settles against you.
   const pos = trader('YOU').shares;
-  STORY.state.playerSide = pos > 0 ? 'YES' : pos < 0 ? 'NO' : 'none';
-  STORY.state.outcome = STORY.state.playerSide === 'NO' ? 'YES' : 'NO';
+  if (pos === 0) { toast('Buy a side first, or Walk away.', 'warn'); return; }
+  STORY.state.betLocked = true; hideCoach();
+  const r = curRound();
+  const side = pos > 0 ? 'YES' : 'NO';
+  STORY.state.playerSide = side;
+  STORY.state.outcome = r.mode === 'fixed' ? r.fixedOutcome : opposite(side);   // rig scenarios settle against you
   setPhase('running');
-  curRound().script(STORY.state.outcome);
+  r.script(STORY.state.outcome);
 }
+
+// runScript onDone callbacks call this
+function storyResolveTick() { storyResolve(); }
 
 function storyResolve() {
   const r = curRound();
-  const outcome = STORY.state.outcome || r.resolveOutcome;
-  resolveMarket(outcome,
-    r.key === 'oracle' ? 'The operator settled this market ' + outcome + '.' : 'Market settled ' + outcome + '.');
+  const outcome = STORY.state.outcome;
+  const walked = STORY.state.playerSide === 'none';
+  resolveMarket(outcome, r.category === 'oracle' ? 'The operator settled this market ' + outcome + '.' : 'Market settled ' + outcome + '.');
   surveillanceOnResolve();
   setPhase('reveal');
   const pnl = youWealth() - STORY.state.roundStartWealth;
-  STORY.state.results.push({ title: r.intro.title, key: r.key, pnl });
+  const won = walked ? true : (r.mode === 'fixed' && STORY.state.playerSide === r.winSide);
+  const result = walked ? 'avoided' : (won ? 'won' : 'lost');
+  STORY.state.results.push({ title: r.intro.title, key: r.key, pnl, result, walked });
   STORY.state.replay = buildReplay(r);
-  showStoryModal(renderReveal(r, pnl));
+  showStoryModal(renderReveal(r, { pnl, walked, won, result, side: STORY.state.playerSide, outcome }));
   if (typeof initReplay === 'function') initReplay(STORY.state.replay);
   renderAll();
 }
 
-// snapshot the round's price path + annotated moments (incl. the player's entry)
 function buildReplay(r) {
   const hist = G.priceHistory.map(p => ({ tick: p.tick, price: p.price }));
   const t0 = hist.length ? hist[0].tick : 0;
   const t1 = hist.length ? hist[hist.length - 1].tick : 1;
   const events = STORY.state.roundEvents.slice();
-
-  // the player's entry — the "here's where you got played" moment
   const mine = G.trades.filter(t => t.buyerId === 'YOU' || t.sellerId === 'YOU');
   if (mine.length) {
-    const first = mine[0];
-    const side = first.buyerId === 'YOU' ? 'YES' : 'NO';
+    const first = mine[0]; const side = first.buyerId === 'YOU' ? 'YES' : 'NO';
     const qty = mine.reduce((s, t) => s + t.qty, 0);
     const avg = Math.round(mine.reduce((s, t) => s + t.price * t.qty, 0) / qty);
     const shown = side === 'YES' ? avg : 100 - avg;
     events.push({ tick: first.tick, kind: 'you', title: `You bought ${qty} ${side} @ ${shown}¢`, detail: r.blame || 'This is where you entered.' });
   } else {
-    events.push({ tick: t0, kind: 'you', title: 'You sat this one out', detail: 'You didn\'t take a position — smart, this round was a trap.' });
+    events.push({ tick: t1, kind: 'you', title: 'You walked away', detail: 'You took no position — you kept your stake.' });
   }
-
-  const losingSide = STORY.state.playerSide;
-  const resDetail = (losingSide === 'YES' || losingSide === 'NO')
-    ? `The market settled ${G.market.outcome} — your ${losingSide} position is worth $0.`
-    : `The market settled ${G.market.outcome}.`;
+  const ls = STORY.state.playerSide;
+  const resDetail = (ls === 'YES' || ls === 'NO') ? `Settled ${G.market.outcome} — your ${ls} is worth $0.` : `Settled ${G.market.outcome} (you weren't in it).`;
   events.push({ tick: t1, kind: 'resolve', title: `Resolved ${G.market.outcome}`, detail: resDetail });
   events.sort((a, b) => a.tick - b.tick);
   return { hist, t0, t1, events, outcome: G.market.outcome };
 }
 
-function storyFinish() {
-  setPhase('finish');
-  showStoryModal(renderFinish());
-  renderAll();
-}
+function storyFinish() { setPhase('finish'); showStoryModal(renderFinish()); renderAll(); }
 
-/* --------------------------- per-tick hook ---------------------------- */
-function storyTick() {
-  if (STORY.state.phase === 'bet') {
-    const r = curRound();
-    if (r && r.duringBet) r.duringBet();
-  }
-}
+function storyTick() { if (STORY.state.phase === 'bet') { const r = curRound(); if (r && r.duringBet) r.duringBet(); } }
 
 /* ------------------------------ rendering ----------------------------- */
 
 function biggestBeneficiary() {
   let best = null, val = -Infinity;
-  for (const id of Object.keys(G.traders)) {
-    const t = trader(id);
-    if (t.kind === 'mm' || t.kind === 'retail' || t.id === 'YOU') continue;
-    const pnl = t.cash - t.startCash;
-    if (pnl > val) { val = pnl; best = t; }
-  }
+  for (const id of Object.keys(G.traders)) { const t = trader(id); if (t.kind === 'mm' || t.kind === 'retail' || t.id === 'YOU') continue; const pnl = t.cash - t.startCash; if (pnl > val) { val = pnl; best = t; } }
   return best ? { name: best.name, role: best.kind, pnl: val } : null;
 }
 
 function renderIntro(r) {
   return `
-    <div class="story-tag">${r.tag}</div>
+    <div class="story-tag">Round ${STORY.state.i + 1} of ${STORY.state.deck.length}</div>
     <h2>${r.intro.title}</h2>
     <div class="story-q">${esc(r.question)}</div>
     <p>${r.intro.body}</p>
-    <div class="story-actions">
-      <button class="story-btn primary" onclick="storyEnterBet()">${r.intro.cta}</button>
-    </div>
-    <div class="story-fine">You have ${money(trader('YOU').cash)} to trade. It looks like a normal market. It isn't.</div>`;
+    <div class="story-mission">🎯 ${r.mission}</div>
+    <div class="story-actions"><button class="story-btn primary" onclick="storyEnterBet()">${r.intro.cta}</button></div>
+    <div class="story-fine">You have ${money(trader('YOU').cash)}. You can investigate before you decide — and you can always walk away.</div>`;
 }
 
-function renderReveal(r, pnl) {
-  const lost = pnl < 0;
+function renderDD() {
+  const c = $('#story-coach'); if (!c) return;
+  const r = curRound(); if (!r) return;
+  const clues = (r.clues || []).map((cl, i) => {
+    const done = STORY.state.revealed.includes(i);
+    return done
+      ? `<div class="dd-clue">${cl.text}</div>`
+      : `<button class="dd-btn" onclick="storyDoDD(${i})">🔍 ${esc(cl.label)}</button>`;
+  }).join('');
+  const dd = c.querySelector('#dd-panel');
+  if (dd) dd.innerHTML = `<div class="dd-head">🎯 ${esc(r.mission)} <span class="dd-budget">Due-diligence checks left: <b>${STORY.state.dd}</b></span></div><div class="dd-clues">${clues}</div>`;
+}
+
+function renderReveal(r, c) {
   const bene = biggestBeneficiary();
-  const logs = G.attackLog.slice().reverse()
-    .map(a => `<div class="rlog"><span>t${a.tick}</span>${esc(a.msg)}</div>`).join('');
+  const logs = G.attackLog.slice().reverse().map(a => `<div class="rlog"><span>t${a.tick}</span>${esc(a.msg)}</div>`).join('');
   const bullets = r.truth.bullets.map(b => `<li>${b}</li>`).join('');
-  const isLast = STORY.state.i >= STORY.rounds.length - 1;
-  const verdict = lost
-    ? `You lost <b>${money(-pnl)}</b> on this trade.`
-    : (pnl > 0
-        ? `You actually came out <b>+${money(pnl)}</b> — you dodged this one. But look at the trap that was set for you:`
-        : `You broke even — but here's the trap you were standing in:`);
-  const gotcha = r.truth.gotcha ? r.truth.gotcha(STORY.state.playerSide, STORY.state.outcome) : '';
+  const isLast = STORY.state.i >= STORY.state.deck.length - 1;
+  let verdict, cls;
+  if (c.result === 'avoided') { verdict = `You walked away and kept your <b>${money(trader('YOU').cash - STORY.state.roundStartWealth + STORY.state.roundStartWealth)}</b> — stake intact.`; cls = 'up'; verdict = `You walked away — <b>stake intact.</b>`; }
+  else if (c.result === 'won') { verdict = `You read it right and came out <b>+${money(c.pnl)}</b>.`; cls = 'up'; }
+  else { verdict = `You lost <b>${money(-c.pnl)}</b> on this trade.`; cls = 'down'; }
+  const gotcha = r.truth.gotcha ? r.truth.gotcha(c) : '';
   return `
-    <div class="story-tag reveal">The reveal · ${r.tag}</div>
-    <div class="story-pnl ${lost ? 'down' : 'up'}">${verdict}</div>
+    <div class="story-tag reveal">The reveal · Round ${STORY.state.i + 1}/${STORY.state.deck.length}</div>
+    <div class="story-pnl ${cls}">${verdict}</div>
     <h2>${r.truth.title}</h2>
     ${gotcha ? `<div class="story-gotcha">${gotcha}</div>` : ''}
     <ul class="story-bullets">${bullets}</ul>
-    ${bene ? `<div class="story-culprit">💰 Who took the other side: <b>${esc(bene.name)}</b> (${ROLE[bene.role] || bene.role}) walked away <b class="up">+${money(bene.pnl)}</b>.</div>` : ''}
+    <div class="story-culprit">🎭 <b>${esc(r.perp.name)}</b> — ${esc(r.perp.motive)}.${bene ? ` Walked away <b class="up">+${money(bene.pnl)}</b>.` : ''}</div>
+    <div class="story-counter">↩︎ <b>Counterfactual:</b> ${r.counter ? r.counter(c) : ''}</div>
     <div class="replay">
-      <div class="replay-head">▶ Replay — watch where it went wrong</div>
+      <div class="replay-head">▶ Replay — watch how it played out</div>
       <canvas id="replay-canvas"></canvas>
       <div id="replay-callout" class="replay-callout"></div>
-      <div class="replay-controls">
-        <button id="replay-play" class="replay-play">❚❚ Pause</button>
-        <input id="replay-scrub" type="range" min="0" max="100" value="0">
-      </div>
+      <div class="replay-controls"><button id="replay-play" class="replay-play">❚❚ Pause</button><input id="replay-scrub" type="range" min="0" max="100" value="0"></div>
       <div id="replay-chips" class="replay-chips"></div>
     </div>
     <div class="story-lesson">🧠 ${r.truth.lesson}</div>
     <details class="story-tape"><summary>Show the raw behind-the-scenes log ▾</summary><div class="rlogs">${logs}</div></details>
-    <div class="story-actions">
-      <button class="story-btn primary" onclick="storyNextRound()">${isLast ? 'See your final result →' : 'Next round →'}</button>
-    </div>`;
+    <div class="story-actions"><button class="story-btn primary" onclick="storyNextRound()">${isLast ? 'See your final score →' : 'Next round →'}</button></div>`;
 }
 
 function renderFinish() {
   const you = trader('YOU');
-  const end = you.cash;
-  const total = end - you.startCash;
-  const rows = STORY.state.results.map(r =>
-    `<div class="fin-row"><span>${esc(r.title)}</span><b class="${r.pnl < 0 ? 'down' : 'up'}">${signMoney(r.pnl)}</b></div>`).join('');
-  const wiped = total <= -400;
+  const end = you.cash, total = end - you.startCash;
+  const avoided = STORY.state.results.filter(r => r.result === 'avoided').length;
+  const won = STORY.state.results.filter(r => r.result === 'won').length;
+  const lost = STORY.state.results.filter(r => r.result === 'lost').length;
+  const rows = STORY.state.results.map(r => `<div class="fin-row"><span>${esc(r.title)} <em>${r.result}</em></span><b class="${r.pnl < 0 ? 'down' : 'up'}">${signMoney(r.pnl)}</b></div>`).join('');
+  let grade, blurb;
+  if (end >= 950) { grade = 'Untouchable'; blurb = 'You smelled nearly every rat. This is what beating the house actually looks like — mostly by refusing to play.'; }
+  else if (end >= 750) { grade = 'Sharp'; blurb = 'You dodged most of the traps. A couple got you — review which tells you missed.'; }
+  else if (end >= 500) { grade = 'Singed'; blurb = 'You took real damage. The setups that look most tempting are usually the ones built for you.'; }
+  else { grade = 'Rekt'; blurb = 'The house owns you. Every "easy" market was bait — restraint and due diligence beat conviction here.'; }
   return `
-    <div class="story-tag">The damage</div>
-    <h2>${wiped ? 'The house won.' : 'How you did'}</h2>
-    <div class="fin-score">
-      <div><span>Started with</span><b>${money(you.startCash)}</b></div>
-      <div class="arrow">→</div>
-      <div><span>Walked away with</span><b class="${end < you.startCash ? 'down' : 'up'}">${money(end)}</b></div>
-    </div>
+    <div class="story-tag">Final score</div>
+    <h2>${grade}</h2>
+    <div class="fin-score"><div><span>Started with</span><b>${money(you.startCash)}</b></div><div class="arrow">→</div><div><span>Walked away with</span><b class="${end < you.startCash ? 'down' : 'up'}">${money(end)}</b></div></div>
+    <div class="fin-tally">🚶 Walked away from <b>${avoided}</b> · ✅ Faded correctly <b>${won}</b> · 💥 Chased into <b>${lost}</b></div>
     <div class="fin-rows">${rows}</div>
-    <div class="fin-total">Net result: <b class="${total < 0 ? 'down' : 'up'}">${signMoney(total)}</b></div>
+    <div class="fin-total">Net: <b class="${total < 0 ? 'down' : 'up'}">${signMoney(total)}</b> · ${esc(blurb)}</div>
     <div class="fin-risks">
-      <div class="fin-risks-h">You just met the three ways a market gets rigged — independently:</div>
-      <div class="fr-row"><span class="fr-ico">📈</span><div><b>Market manipulation</b> (round 1) — the <i>price</i> was faked. Defense: attributable volume, position limits, deep real liquidity.</div></div>
-      <div class="fr-row"><span class="fr-ico">⚖️</span><div><b>Corrupt resolution</b> (round 2) — the <i>outcome</i> was rigged. Defense: an independent oracle and clear, unchangeable rules.</div></div>
-      <div class="fr-row"><span class="fr-ico">🏦</span><div><b>Operator abuse</b> (round 3) — your <i>access</i> was controlled. Defense: non-custodial settlement, disclosed fees, no freeze switch.</div></div>
+      <div class="fin-risks-h">You met the ways a market gets rigged — independently of each other:</div>
+      <div class="fr-row"><span class="fr-ico">📈</span><div><b>Price integrity</b> — pumps, wash trades, spoofed depth. Defense: attributable volume, real liquidity.</div></div>
+      <div class="fr-row"><span class="fr-ico">📰</span><div><b>Information</b> — fake news, rumor cascades. Defense: verify the source before you react.</div></div>
+      <div class="fr-row"><span class="fr-ico">⚖️</span><div><b>Settlement</b> — corrupt oracles, vague rules. Defense: independent resolution and clear, fixed criteria.</div></div>
+      <div class="fr-row"><span class="fr-ico">🏦</span><div><b>Platform</b> — rigged fees, frozen exits. Defense: non-custodial settlement, disclosed terms.</div></div>
     </div>
-    <div class="story-lesson">Every market looked normal while you were inside it — a rising chart, a confident crowd, a smooth platform. That's exactly the point: <b>manipulation is invisible from the inside.</b> The only defenses are transparency (who is trading, who settles, who holds), and healthy suspicion of anything that looks like free money.</div>
-    <div class="story-actions">
-      <button class="story-btn primary" onclick="storyStart()">↺ Play again</button>
-      <button class="story-btn" onclick="storyExit()">Explore the free sandbox →</button>
-    </div>`;
+    <div class="story-lesson">Every market looked normal from the inside. The winning move was rarely a better bet — it was <b>investigating, and walking away when the answer was "you can't trust this."</b></div>
+    <div class="story-actions"><button class="story-btn primary" onclick="storyStart()">↺ Play again (new draw)</button><button class="story-btn" onclick="storyExit()">Explore the sandbox →</button></div>`;
 }
 
 /* ----------------------------- modal / coach -------------------------- */
-function showStoryModal(html) {
-  let ov = $('#story-modal');
-  ov.querySelector('.story-card').innerHTML = html;
-  ov.classList.add('show');
-}
+function showStoryModal(html) { const ov = $('#story-modal'); ov.querySelector('.story-card').innerHTML = html; ov.classList.add('show'); }
 function hideStoryModal() { if (typeof stopReplay === 'function') stopReplay(); const ov = $('#story-modal'); if (ov) ov.classList.remove('show'); }
-
-function showCoach(prompt) {
-  const c = $('#story-coach');
-  c.querySelector('.coach-text').innerHTML = prompt;
-  c.classList.add('show');
-}
+function showCoach(prompt) { const c = $('#story-coach'); c.querySelector('.coach-text').innerHTML = prompt; c.classList.add('show'); }
 function hideCoach() { const c = $('#story-coach'); if (c) c.classList.remove('show'); }

@@ -49,17 +49,26 @@ function runSmokeTest() {
     resolveMarket('NO', 'smoke');
     ok('Resolution settles P&L', G.market.status === 'resolved' && trader('YOU').shares === 0 && trader('YOU').cash < trader('YOU').startCash);
 
-    // 7) Story Mode opens and completes
+    // 7) Story Mode: 5 random rounds, deep-link, walk-away, complete
     storyStart(); clearInterval(loopTimer);
+    ok('Story deck is 5 random rounds', STORY.state.deck.length === 5 && STORY.pool.length > 5, 'deck=' + STORY.state.deck.map(r => r.key).join(','));
     let storyOK = STORY.state.phase === 'intro';
-    for (let r = 0; r < 3; r++) {
-      storyEnterBet(); selectedQty = 100; youTrade('buy'); storyLockIn();
-      warm(16);
+    for (let r = 0; r < STORY.state.deck.length; r++) {
+      storyEnterBet();
+      if (r === 0) {                                   // exercise walk-away
+        storyWalkAway();
+      } else {                                         // exercise both bet sides
+        selectedQty = 100; youTrade(r % 2 ? 'sell' : 'buy'); storyLockIn();
+      }
+      warm(18);
       storyOK = storyOK && STORY.state.phase === 'reveal' && !!STORY.state.replay && STORY.state.replay.events.length >= 3;
       storyNextRound();
     }
     storyOK = storyOK && STORY.state.phase === 'finish';
-    ok('Story Mode completes (start→trade→lock→reveal→replay→finish)', storyOK, 'phase=' + STORY.state.phase);
+    ok('Story Mode completes (5 rounds, walk-away + both sides)', storyOK, 'phase=' + STORY.state.phase);
+    // walking away preserves capital for that round
+    const walkPreserved = STORY.state.results[0] && STORY.state.results[0].result === 'avoided' && Math.abs(STORY.state.results[0].pnl) < 1;
+    ok('Walk away preserves capital', walkPreserved);
     storyExit();
   } catch (err) {
     ok('No exceptions thrown', false, String(err));

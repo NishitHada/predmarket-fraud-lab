@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Prediction Market Fraud Lab</title>
-  <link rel="stylesheet" href="styles.css?v=6">
+  <link rel="stylesheet" href="styles.css?v=7">
 </head>
 <body>
   <header class="topbar">
@@ -143,8 +143,14 @@
 
   <!-- story mode: coach bar + reveal modal -->
   <div id="story-coach" class="story-coach">
-    <div class="coach-text"></div>
-    <button class="story-btn primary" onclick="storyLockIn()">Lock in my bet ▶</button>
+    <div class="coach-main">
+      <div class="coach-text"></div>
+      <div id="dd-panel" class="dd-panel"></div>
+    </div>
+    <div class="coach-actions">
+      <button class="story-btn" id="coach-walk">🚶 Walk away</button>
+      <button class="story-btn primary" id="coach-lockin">Lock in my bet ▶</button>
+    </div>
   </div>
   <div id="story-modal" class="story-modal">
     <div class="story-card"></div>
@@ -184,14 +190,14 @@
     <span class="ver" id="ver"></span>
   </footer>
 
-  <script src="js/engine.js?v=6"></script>
-  <script src="js/bots.js?v=6"></script>
-  <script src="js/scenarios.js?v=6"></script>
-  <script src="js/surveillance.js?v=6"></script>
-  <script src="js/story.js?v=6"></script>
-  <script src="js/replay.js?v=6"></script>
-  <script src="js/ui.js?v=6"></script>
-  <script src="js/main.js?v=6"></script>
-  <script src="js/smoketest.js?v=6"></script>
+  <script src="js/engine.js?v=7"></script>
+  <script src="js/bots.js?v=7"></script>
+  <script src="js/scenarios.js?v=7"></script>
+  <script src="js/surveillance.js?v=7"></script>
+  <script src="js/story.js?v=7"></script>
+  <script src="js/replay.js?v=7"></script>
+  <script src="js/ui.js?v=7"></script>
+  <script src="js/main.js?v=7"></script>
+  <script src="js/smoketest.js?v=7"></script>
 </body>
 </html>
