@@ -536,8 +536,8 @@ function storyEnterBet() {
   setPhase('bet');
   hideStoryModal();
   showCoach(STORY.state.coached
-    ? 'Guided mode: I\'ll read the signals live — green flags and red. Then <b>Buy a side</b> or <b>Walk away</b>.'
-    : 'Investigate with your due-diligence checks, then <b>Buy a side</b> or <b>Walk away</b>.');
+    ? 'Guided mode: I\'ll read the signals live. <b>Place as many trades as you like</b> to build or adjust your position — then <b>Lock in</b> to let it resolve, or <b>Walk away</b>.'
+    : 'Investigate, then <b>trade freely to build your position</b> (buy, add, reduce, flip) — and <b>Lock in</b> to resolve when you\'re set, or <b>Walk away</b>.');
   STORY.state.coachN = 0; STORY.state.coachTick = 0;
   renderGuidance();
   renderAll();

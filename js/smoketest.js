@@ -30,8 +30,8 @@ function runSmokeTest() {
 
     // 3c) Your Desk renders correct numbers (the panel that "seemed buggy")
     const dollars = s => Math.round(parseFloat(String(s).replace(/[^0-9.\-]/g, '')) || 0);  // parseFloat handles the sign
-    resetSim(); clearInterval(loopTimer); warm(4);
-    selectedQty = 100; youTrade('buy'); renderDesk();
+    resetSim(); clearInterval(loopTimer); warm(6);
+    selectedQty = 50; youTrade('buy'); renderDesk();   // 50 reliably fits the book depth for the close test
     const y1 = trader('YOU');
     const posTxt = document.getElementById('you-pos').textContent;
     const payYes = dollars(document.getElementById('pay-yes').textContent);
