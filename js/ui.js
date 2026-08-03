@@ -144,6 +144,16 @@ function renderBanner() {
     e.innerHTML = '<b>⚠ Fees secretly raised to ' + G.flags.feeBps + ' bps.</b> Every trade now bleeds value to the operator.';
     return;
   }
+  // an attack has finished but its breakdown is still on screen — stay consistent
+  // (don't snap back to "calm" while the lesson card/logs still show the attack)
+  if (G.attackImpact) {
+    const y = trader('YOU');
+    const delta = youWealth() - G.attackImpact.base;
+    const eff = (y.shares !== 0 || Math.abs(delta) >= 1) ? ` Effect on you: <b>${signMoney(delta)}</b>.` : '';
+    e.className = 'banner aftermath';
+    e.innerHTML = `<span class="pdot"></span><b>${esc(G.attackImpact.name)}</b> ran — read the anatomy below.${eff}`;
+    return;
+  }
   e.className = 'banner calm';
   e.innerHTML = '<span class="pdot"></span>Market is calm — honest bots trading. Place a bet on <b>Your Desk</b>, then launch an attack and watch what it does to you.';
 }

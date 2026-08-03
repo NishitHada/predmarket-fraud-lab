@@ -441,3 +441,8 @@ body.story .deskhint{display:none}
 .ri-ico{font-size:18px;flex:0 0 auto;line-height:1.2}
 .ri-src{font-size:11px;color:var(--dimmer);text-transform:uppercase;letter-spacing:.04em;margin-bottom:2px}
 .ri-text{font-size:13px;color:var(--ink);line-height:1.45}
+
+/* banner: attack finished but its breakdown is still on screen */
+.banner.aftermath{background:rgba(224,179,65,.08);color:var(--dim)}
+.banner.aftermath b{color:var(--ink)}
+.banner.aftermath .pdot{background:var(--amber);animation:none;box-shadow:none}
