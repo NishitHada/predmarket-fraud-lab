@@ -39,8 +39,8 @@ STORY.pool = [
     intro: { title: 'A rocket everyone\'s talking about', body: 'Up over <b>30%</b> in minutes and still climbing, on huge volume. The chart is a straight line up. Feels like the easy trade of the day.', cta: 'Take a look →' },
     mission: 'Protect your $1,000. Is this momentum real — or bait?',
     clues: [
-      { label: 'Check who\'s buying', text: '⚑ ~90% of the volume traces to WhaleFund and three look-alike accounts trading with each other.' },
-      { label: 'Check the news', text: '⚑ There is no news. The move is pure order-flow — nothing fundamental behind it.' },
+      { label: 'Check who\'s trading', text: '⚑ Almost all the volume is a handful of accounts trading with <b>each other</b> — a wash-trading pattern. You can\'t confirm a single owner, but this "volume" isn\'t independent buying.' },
+      { label: 'Check for news', text: '⚑ No filing, no outlet, nothing fundamental — the move is pure order flow, not information.' },
     ],
     blame: 'You chased a rally that one whale manufactured to sell into.',
     preseed() {
@@ -94,7 +94,7 @@ STORY.pool = [
     mission: 'The event looks likely. But what exactly counts as a "launch"?',
     clues: [
       { label: 'Read the resolution rules', text: '⚑ The rules never define "launch." A private beta? A waitlist? The <b>operator decides</b>, at its discretion.' },
-      { label: 'Check the operator\'s position', text: '⚑ The operator holds a position that profits if this resolves NO.' },
+      { label: 'Check for disclosed conflicts', text: '⚑ The operator doesn\'t disclose whether it holds a position — so a conflict of interest at settlement <b>can\'t be ruled out</b>.' },
     ],
     blame: 'You bet on a market whose winning condition was never actually defined.',
     preseed() { storyMark('rules', 'Vague wording', 'The market\'s resolution criteria are undefined — "launch" is never specified.'); G.fairValue = 63; for (let k = 0; k < 5; k++) { G.running = true; tickOnce(); } },
@@ -142,7 +142,7 @@ STORY.pool = [
     mission: 'The crowd is sure. But who actually decides the outcome?',
     clues: [
       { label: 'Check the oracle', text: '⚑ Resolution comes from a single source the operator controls — no independent or backup oracle.' },
-      { label: 'Check for insiders', text: '⚑ One account is quietly building a large position AGAINST the 86% consensus.' },
+      { label: 'Check the order flow', text: '⚑ One account is quietly building a large position <b>against</b> the near-unanimous 86% market. You can\'t prove it\'s an insider — but it\'s trading like it knows the ruling.' },
     ],
     blame: 'You bought a "sure thing" whose result was decided by an interested party.',
     preseed() { G.fairValue = 86; for (let k = 0; k < 6; k++) { G.running = true; tickOnce(); } },
@@ -264,39 +264,39 @@ STORY.pool = [
 const COACH = {
   momentum: {
     optimal: { play: 'Walk away', ev: 'EV(any bet) < 0', why: 'One actor controls the price and can dump on longs or squeeze shorts — whichever way you lean, they take the other side. With no verifiable edge every bet is negative-EV, so folding (0) wins. Minimax: walking caps your worst case at $0.' },
-    tips: ['Watch the tape — acct_9f2 keeps buying from acct_1a7. Same owner on both sides: the volume is fake.', 'The price is vertical but there\'s no news. One wallet is lifting every offer.', '➡ React: unattributable volume isn\'t demand. Don\'t chase — walk away.'],
+    tips: ['Watch the tape — the same two accounts keep trading with each other. That round-trip pattern is how fake volume is made; treat this "volume" as unverified.', 'Search for a cause — there\'s no news or filing behind the move. It\'s being pushed by order flow, not discovered.', '➡ React: volume you can\'t attribute to real, independent buyers proves nothing. Don\'t chase — walk away.'],
   },
   fake_news: {
     optimal: { play: 'Fade it (Buy NO) — or walk', ev: 'EV(fade) > 0', why: 'The rare +EV spot: you can verify the "news" is unconfirmed, so you know something the chasers don\'t. Fading the spike is positive-EV; walking is 0; chasing the headline is negative-EV.' },
-    tips: ['A "BREAKING" flash spiked YES — but it traces to one anonymous account, uncorroborated.', 'That same account is quietly selling YES into the spike it created.', '➡ React: unverified news is a claim, not a fact. Fade it (Buy NO), or walk.'],
+    tips: ['Trace the "flash" — it\'s one anonymous account, and no outlet, regulator, or filing corroborates it. Unverified.', 'Watch that account\'s own trades — it\'s selling YES into the spike its post created. Its incentive is to make you buy.', '➡ React: an unconfirmed headline is a claim, and the source is trading against it. Fade it (Buy NO), or walk.'],
   },
   rule_ambiguity: {
-    optimal: { play: 'Walk away', ev: 'EV(any bet) < 0', why: 'The winning condition is undefined and the resolver profits from ruling against you. Settlement is adversarial regardless of the real event, so no side is +EV. Fold.' },
-    tips: ['The question says "launch" but never defines it — resolution is at the operator\'s discretion.', 'The operator holds a position that profits if it rules NO.', '➡ React: undefined rules + a conflicted resolver = unwinnable. Walk away.'],
+    optimal: { play: 'Walk away', ev: 'EV(any bet) < 0', why: 'The winning condition is undefined and the resolver has full discretion, so settlement is adversarial regardless of the real event. No side is reliably +EV. Fold.' },
+    tips: ['Read the resolution rules — "launch" is never defined (beta? waitlist?). Settlement is left to the operator\'s judgment.', 'Check for disclosures — the operator doesn\'t disclose its own position, so you can\'t rule out a conflict at settlement.', '➡ React: an undefined rule a discretionary party interprets is unwinnable. Walk away.'],
   },
   liquidity_mirage: {
     optimal: { play: 'Walk away (or size tiny)', ev: 'EV(sizeable bet) < 0', why: 'The displayed depth cancels on contact, so your expected fill is far worse than the screen — that slippage alone makes even a "correct" bet negative-EV. If you must trade, size tiny; best is to pass.' },
-    tips: ['The book looks deep, but that size is one account\'s — and it cancels when price approaches.', 'Recent large orders filled far worse than the book implied.', '➡ React: displayed liquidity isn\'t guaranteed. Don\'t size in — walk away.'],
+    tips: ['Probe the book with a tiny order — the big resting size pulls back as price approaches, and it\'s mostly one account. It\'s not real depth.', 'Check recent large fills — they printed far worse than the book showed. The depth evaporated on contact before.', '➡ React: liquidity you can make vanish isn\'t liquidity. Don\'t size in — walk away.'],
   },
   oracle: {
-    optimal: { play: 'Walk away', ev: 'EV(any bet) < 0', why: 'A single operator-controlled oracle can settle whichever way beats you, and an insider already holds the other side. The game is negative-sum for you regardless of the price. Don\'t play.' },
-    tips: ['Resolution comes from one operator-controlled source — no backup oracle.', 'An insider is loading the opposite of the 86% consensus.', '➡ React: consensus means nothing if the settler can lie. Walk away.'],
+    optimal: { play: 'Walk away', ev: 'EV(any bet) < 0', why: 'A single operator-controlled source decides the result with no backup, and someone is already positioned against the consensus. When one party can rule the outcome, the game is negative-sum for you regardless of price. Don\'t play.' },
+    tips: ['Read the resolution terms — settlement comes from one operator-controlled source with no independent backup. Whoever runs it decides.', 'Watch the flow — one account is quietly taking the other side of a near-unanimous 86% market. You can\'t prove it\'s an insider, but it\'s trading like it knows something.', '➡ React: if a single party can rule the outcome, consensus is meaningless. Walk away.'],
   },
   exit: {
-    optimal: { play: 'Walk away', ev: 'EV(any bet) < 0', why: 'You don\'t control your downside: fees can change, the price can be moved, and the exit can be frozen. When the counterparty controls your exit, no entry is +EV. Fold.' },
-    tips: ['Fees were quietly raised ~20× — every trade bleeds to the house.', 'The operator can freeze withdrawals unilaterally — you may not be able to exit.', '➡ React: if you can\'t trust the fees or the exit, don\'t enter. Walk away.'],
+    optimal: { play: 'Walk away', ev: 'EV(any bet) < 0', why: 'You don\'t control your downside: the fee schedule can change, the price can be moved, and the exit can be frozen. When the counterparty controls your exit, no entry is +EV. Fold.' },
+    tips: ['Check the fee schedule — it was recently raised ~20× to 300 bps (it\'s on the terms page). Every trade now bleeds to the house.', 'Read the withdrawal terms — the operator can pause withdrawals unilaterally "for maintenance," with no guarantee. Your exit isn\'t really yours.', '➡ React: if you can\'t trust the fees or the exit, don\'t enter. Walk away.'],
   },
   clean_verified: {
     optimal: { play: 'Buy YES', ev: 'EV(YES) > 0', why: 'Clean market + a verifiable public confirmation = a real, checkable edge. Pressing it (Buy YES) is positive-EV. Walking away here just leaves money on the table — restraint is only optimal against a trap.' },
-    tips: ['✓ Flow is spread across many distinct accounts — no single wallet dominates.', '✓ Independent oracle with published rules — settlement isn\'t someone\'s discretion.', '➡ React: no red flags, and a verified confirmation. Real edge — buying YES is +EV.'],
+    tips: ['✓ Look at the flow — it\'s spread across a dozen distinct accounts, no single wallet dominating. That\'s real two-sided liquidity.', '✓ Read the resolution page — an independent authority with published, fixed rules. Settlement isn\'t anyone\'s discretion.', '➡ React: no red flags, and a public confirmation you can verify. That\'s a real edge — buying YES is +EV.'],
   },
   value_bet: {
     optimal: { play: 'Buy YES', ev: 'EV(YES) > 0', why: 'The market is fair but the crowd is too pessimistic — public pre-registered data supports YES far above 38%. That gap is your edge; buying YES is positive-EV.' },
-    tips: ['✓ Independent oracle (the trial registry) with fixed, pre-registered rules.', '✓ Public interim data strongly supports success — the 38% looks too low.', '➡ React: a fair market can still misprice. You have a verified edge — Buy YES.'],
+    tips: ['✓ Check the oracle — a public trial registry with pre-registered, fixed criteria. Independent and readable.', '✓ Read the public interim data — it strongly supports success, well above the 38% the crowd is pricing.', '➡ React: a fair market can still misprice. You have a verifiable edge — Buy YES.'],
   },
   clean_no: {
     optimal: { play: 'Buy NO', ev: 'EV(NO) > 0', why: 'Clean market, but the public metrics show growth stalled well short of the target. The verified signal points NO — pressing NO is positive-EV. "Clean" does not mean "bet YES".' },
-    tips: ['✓ Independent oracle with a published metric definition.', '✓ Real two-sided book, disclosed fees — no manipulation signatures.', '➡ React: verified data shows the target won\'t be hit — the edge is NO. Buy NO.'],
+    tips: ['✓ Check the oracle — independent, with a published definition of "1M users." Clear, fixed criteria.', '✓ Read the public dashboards — growth has stalled well short of the pace needed. The evidence points NO.', '➡ React: clean market, but the verifiable data says NO. Buy NO — clean doesn\'t mean bet YES.'],
   },
 };
 
