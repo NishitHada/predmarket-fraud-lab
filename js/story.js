@@ -348,6 +348,16 @@ function hideStrategy() { const m = document.getElementById('strategy-modal'); i
 
 function setPhase(phase) { STORY.state.phase = phase; G.running = (phase === 'bet' || phase === 'running'); }
 
+// In story mode the right column is otherwise empty, so move the Trade Tape
+// there to declutter the left (Desk + Order Book stay together).
+function storyLayout(on) {
+  const tape = document.getElementById('panel-tape');
+  const right = document.querySelector('.col.right');
+  const left = document.querySelector('.col.left');
+  if (!tape || !right || !left) return;
+  (on ? right : left).appendChild(tape);   // back to the end of the left column on exit
+}
+
 function storyStart() {
   STORY.state.active = true;
   STORY.state.i = -1;
@@ -355,6 +365,7 @@ function storyStart() {
   STORY.state.deck = buildDeck();
   STORY.state.dd = DD_BUDGET;
   document.body.classList.add('story');
+  storyLayout(true);
   storyNextRound();
 }
 
@@ -371,6 +382,7 @@ function buildDeck() {
 function storyExit() {
   STORY.state.active = false; STORY.state.phase = 'off';
   document.body.classList.remove('story');
+  storyLayout(false);
   hideStoryModal(); hideCoach();
   resetSim();
 }

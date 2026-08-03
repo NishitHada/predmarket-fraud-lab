@@ -206,10 +206,12 @@ button.warn{border-color:#5a3a3a}
 body.story #story-mode{display:none}
 body.story #exit-story{display:inline-block}
 body.story #step,body.story #reset{display:none}
-/* hide the intel + attack console + operator-secret stats while the con plays out */
+/* hide the intel + attack console + operator-secret stats while the con plays out.
+   The right column stays visible — the Trade Tape is moved into it (via JS) so the
+   left column (Desk + Order Book) isn't crowded. */
 body.story #panel-surv,body.story #panel-attacklog,body.story #panel-traders,
 body.story .console,body.story .stat.small{display:none}
-body.story .col.right{display:none}
+body.story .col.right:empty{display:none}
 
 /* ---- coach bar (betting phase) ---- */
 .story-coach{position:fixed;left:50%;bottom:0;transform:translateX(-50%) translateY(110%);
