@@ -3,7 +3,7 @@
 Everything here is **discussed but not yet built**, mostly waiting on a decision.
 Nothing in this file is live. Current shipped version: see `APP_VERSION` in `js/engine.js`.
 
-Legend: 🟢 ready to build (just say go) · 🟡 needs a design choice from you · 🔵 needs external setup
+Legend: 🟢 ready to build (just say go) · 🟡 needs a design choice from you · 🔵 needs external setup · ⚪ discussed, leaning against
 
 ---
 
@@ -23,6 +23,8 @@ Legend: 🟢 ready to build (just say go) · 🟡 needs a design choice from you
   Models real uncertainty; risks feeling unfair if overdone.
 - 🟡 **Randomise the coach's hyped side per round** — so players can't pattern-match
   "the nudge is always YES."
+- 🟡 **Adjustable clean/trap ratio + difficulty** — tune how many of the 5 rounds are
+  winnable, and how obvious the tells are.
 
 ## More scenarios (from your list — pick any to add)
 
@@ -60,13 +62,47 @@ Each is now ~a 30-line data object thanks to the scenario framework.
   *local-only* (per-browser, private, no "total players") vs *global* (real cross-player
   leaderboard, requires a small free backend you own, e.g. Supabase). Parked as "maybe later."
 
+## Sandbox mode enhancements (offered earlier, never decided)
+
+- 🟡 **Defenses on/off toggle** — run any attack with mitigations active (position/volume
+  limits, circuit breakers, an independent/decentralized oracle, fee disclosure, withdrawal
+  guarantees) and watch it get prevented or blunted. The sandbox counterpart to the
+  protections-enabled replay above.
+- 🟢 **Auto-pause when an attack fires** — pause the sim on each key step so you can read
+  what's happening before it moves on.
+- 🟢 **One-click "Chase this pump" button** — auto-buys into the pump so the
+  pump-and-dump lesson is impossible to miss (you feel the dump).
+- 🟢 **Dump-phase red flash** — flash the "Effect on you" readout red as the dump crosses,
+  reinforcing the live impact.
+- 🟡 **Multiple simultaneous markets** in the sandbox (watch cross-market effects).
+- 🟡 **Detection-sensitivity dial** — slide surveillance from strict → lax to explore the
+  false-positive vs missed-detection tradeoff.
+
+## Desk / engineering
+
+- 🟡 **Full cost breakdown on the desk** — itemise entry price, spread/slippage, fees,
+  realised P&L, unrealised P&L, and settlement loss (currently summarised as payouts + P&L).
+- 🟢 **Inline handlers → attached listeners** — the dynamic UI already uses attached
+  `.onclick`; a few static buttons still use inline `onclick`. Low-value cleanup for
+  testability/consistency.
+- 🟢 **Automate cache-busting to the release version** — instead of the manual `?v=N` bump.
+
 ## Polish / minor (awaiting a nod)
 
 - Move the Order Book to the right column too (leaving only the Desk on the left) if the
   left still feels tight in story mode.
 - Replay flourishes — auto-pause on your entry marker; flash red as the dump crosses.
 - About / README link in the header; optional custom domain for the Pages site.
-- Automate cache-busting to the release version (instead of the manual `?v=N` bump).
+
+## Discussed — leaning against (decision captured so we don't re-litigate)
+
+- ⚪ **Deliberate false positives / missed detections in surveillance** (review item #14) —
+  realistic, but injecting random misses muddies the teaching signal ("learn the tell" vs
+  "the tell sometimes isn't there"). The SUSPECTED/CONFIRMED labelling already conveys
+  "surveillance is imperfect." Revisit only if we want a harder, more adversarial mode.
+- ⚪ **Progressive disclosure / collapse of the 11 sandbox attacks** (review items #5/#19) —
+  Story Mode is already the guided path; the sandbox is deliberately the full playground.
+  Reconsider if the sandbox's initial density is a real barrier for new users.
 
 ---
 
@@ -77,4 +113,5 @@ Each is now ~a 30-line data object thanks to the scenario framework.
 - Guided coach (green/red flags live), game-theory optimal-play blocks + strategy primer.
 - Research dossier per scenario; source_conflict scenario (conflicted oracle source).
 - Desk per-round P&L fix + tests; coach/DD tips regrounded in observable evidence.
+- "Effect on you" live impact readout + post-attack lesson card in the sandbox.
 - Deployed on GitHub Pages with a separate Story Mode URL; smoke test 16/16.
