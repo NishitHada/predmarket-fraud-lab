@@ -141,8 +141,10 @@ button.warn{border-color:#5a3a3a}
 .chartpanel{flex:0 0 auto}
 #chart{width:100%;height:230px;display:block}
 
-/* console */
-.console{flex:1;overflow:auto}
+/* console — natural height; the center column scrolls (never squeeze it to
+   near-zero when the lesson card is present) */
+.console{flex:0 0 auto}
+.lesson-card{flex:0 0 auto}
 .cats{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 .cathead{font-weight:700;font-size:12px;padding:4px 8px;border-radius:6px;margin-bottom:8px;display:inline-block}
 .cathead.trade{background:rgba(239,111,108,.15);color:var(--red)}
