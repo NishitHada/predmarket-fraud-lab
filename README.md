@@ -1,5 +1,9 @@
 # Prediction Market Fraud Lab
 
+**▶ Play it live (no signup, runs in your browser):**
+- 🔬 **Sandbox:** https://nishithada.github.io/predmarket-fraud-lab/
+- 🎮 **Story mode — "Can you beat the house?":** https://nishithada.github.io/predmarket-fraud-lab/story.html
+
 An interactive, **fully simulated** binary prediction market (Kalshi/Polymarket-style)
 built to demonstrate the fraud and manipulation vectors that threaten real markets —
 and how a surveillance desk tries to catch them.
