@@ -141,7 +141,7 @@ function renderBanner() {
   }
   if (G.flags.feeBps > 50) {
     e.className = 'banner warn';
-    e.innerHTML = '<b>⚠ Fees secretly raised to ' + G.flags.feeBps + ' bps.</b> Every trade now bleeds value to the operator.';
+    e.innerHTML = '<b>⚠ Fees secretly raised to ' + G.flags.feeBps + ' bps.</b> Every trade now bleeds value to the operator. (Reset to recover.)';
     return;
   }
   // an attack has finished but its breakdown is still on screen — stay consistent

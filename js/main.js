@@ -32,6 +32,21 @@ function tickOnce() {
     resolveHonest();
     surveillanceOnResolve();
   }
+
+  // sandbox: a one-shot attack is a transient EVENT, not a permanent state.
+  // Once its script has finished, keep the "aftermath" (banner + lesson card)
+  // for a while so it's readable, then return to calm on its own. Genuine
+  // ongoing conditions (frozen withdrawals / rigged fees) are excluded — those
+  // persist until Reset, which is the point.
+  if (!inStory && G.attackImpact) {
+    if (G.attackImpact.endedAt == null && G.scenarios.length === 0 && G.tick > G.attackImpact.startTick + 1) {
+      G.attackImpact.endedAt = G.tick;
+    }
+    const ongoing = G.flags.withdrawalsFrozen || G.flags.feeBps > 50;
+    if (G.attackImpact.endedAt != null && !ongoing && G.tick - G.attackImpact.endedAt > 40) {
+      G.attackImpact = null;    // back to calm; lesson card auto-clears with it
+    }
+  }
   renderAll();
 }
 
