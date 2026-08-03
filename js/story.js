@@ -181,6 +181,38 @@ STORY.pool = [
     counter() { return 'Had withdrawals been independently controlled, you could have exited early for a small loss. Frozen in, you ate the whole move — walking away avoided it.'; },
   },
 
+  {
+    key: 'source_conflict', category: 'oracle', family: 'trap', mode: 'fixed', fixedOutcome: 'NO', winSide: 'NO', nudge: 'YES',
+    perp: { name: 'the project director', motive: 'both runs the launch and certifies it — and quietly bet NO' },
+    question: '🚇 Will the Eastside metro extension open on schedule (Dec 31)?',
+    startPrice: 45,
+    intro: { title: 'Looks ready to open', body: 'Construction is done and the market is drifting toward <b>YES</b> — the line looks ready, and an <b>official authority</b> will certify the opening. Feels like a safe YES.', cta: 'Verify it →' },
+    mission: 'An official will certify this. But who is that official — and do they have a stake?',
+    clues: [
+      { label: 'Check who certifies the result', text: '⚑ The certification comes from <b>one official</b> — the project director — whose office both <b>runs</b> the launch and <b>certifies</b> it. No separation of powers.' },
+      { label: 'Check that official\'s stake', text: '⚑ Public disclosures show the project director holds a large <b>NO</b> position in this market. They control the date <i>and</i> profit if it slips.' },
+    ],
+    blame: 'You trusted a certification controlled by someone betting against it.',
+    preseed() { storyMark('setup', 'Looks ready', 'Construction complete; the market drifts toward YES on an official certification.'); G.fairValue = 45; for (let k = 0; k < 4; k++) { G.fairValue = Math.min(72, G.fairValue + 7); const b = bestBid(); if (b) placeOrder('INSIDER', 'sell', b.price, 16, 'confshort'); G.running = true; tickOnce(); } },
+    duringBet() { G.fairValue = Math.min(72, G.fairValue + 0.4); const b = bestBid(); if (b) placeOrder('INSIDER', 'sell', b.price, 12, 'confshort'); },
+    script(outcome) { storyMark('delay', 'Surprise "safety review"', 'The project director announces a last-minute delay — the exact outcome they bet on. It settles NO.'); G.fairValue = 12; runScript('s_conf', 14, () => { const b = bestBid(); if (b) placeOrder('INSIDER', 'sell', b.price - 1, 30, 'delay'); }, storyResolveTick); },
+    truth: {
+      title: 'The oracle was "independent" — the source wasn\'t.',
+      gotcha(c) {
+        if (c.walked) return 'You saw the person certifying the result was betting on it, and walked — <b>exactly right.</b>';
+        if (c.side === 'NO') return 'You spotted the conflict and <b>faded the naive YES</b>. When the decider is compromised, the informed side is against the crowd.';
+        return 'You trusted the "certification," but the official who controls it had bet NO — and delayed the opening to win.';
+      },
+      bullets: [
+        'The platform\'s oracle was independent — but it just relays whatever <b>one official certifies</b>.',
+        'That official both <b>controls the real-world event</b> (the launch date) and profits from NO — a direct conflict at the source of truth.',
+        'Lesson class: <b>source / real-world manipulation</b> — an "independent oracle" is worthless if the human feeding it, or controlling the event, has a stake.',
+      ],
+      lesson: 'Trace the outcome all the way to its source. An oracle only relays a result — if the person who produces that result (or controls the underlying event) can bet on it, the market can be moved in the real world, not just on the tape.',
+    },
+    counter() { return 'The line\'s readiness never mattered — the person controlling the date wanted NO. Fading the crowd (Buy NO) paid; walking away was safe; trusting the "certification" lost.'; },
+  },
+
   /* ---------------- CLEAN / winnable markets (family: 'clean') ---------- */
   {
     key: 'clean_verified', category: 'clean', family: 'clean', mode: 'legit', trueOutcome: 'YES', signalSide: 'YES', nudge: 'YES',
@@ -286,6 +318,14 @@ const COACH = {
     optimal: { play: 'Walk away', ev: 'EV(any bet) < 0', why: 'You don\'t control your downside: the fee schedule can change, the price can be moved, and the exit can be frozen. When the counterparty controls your exit, no entry is +EV. Fold.' },
     tips: ['Check the fee schedule — it was recently raised ~20× to 300 bps (it\'s on the terms page). Every trade now bleeds to the house.', 'Read the withdrawal terms — the operator can pause withdrawals unilaterally "for maintenance," with no guarantee. Your exit isn\'t really yours.', '➡ React: if you can\'t trust the fees or the exit, don\'t enter. Walk away.'],
   },
+  source_conflict: {
+    optimal: { play: 'Fade it (Buy NO) — or walk', ev: 'EV(fade) > 0', why: 'Once you\'ve verified that the person who certifies the result also controls the launch date and is betting NO, the outcome is effectively decided against the naive YES crowd. Fading (Buy NO) is positive-EV; walking is safe; trusting the "certification" is negative-EV.' },
+    tips: [
+      'Read who certifies the result — it\'s a single official whose office both runs and certifies the launch. No separation of powers.',
+      'Check disclosures — that official holds a large NO position. They can delay the opening and profit from it.',
+      '➡ React: when the person who decides the real event is betting on it, the "independent" oracle is compromised. Fade the naive YES (Buy NO), or walk.',
+    ],
+  },
   clean_verified: {
     optimal: { play: 'Buy YES', ev: 'EV(YES) > 0', why: 'Clean market + a verifiable public confirmation = a real, checkable edge. Pressing it (Buy YES) is positive-EV. Walking away here just leaves money on the table — restraint is only optimal against a trap.' },
     tips: ['✓ Look at the flow — it\'s spread across a dozen distinct accounts, no single wallet dominating. That\'s real two-sided liquidity.', '✓ Read the resolution page — an independent authority with published, fixed rules. Settlement isn\'t anyone\'s discretion.', '➡ React: no red flags, and a public confirmation you can verify. That\'s a real edge — buying YES is +EV.'],
@@ -317,12 +357,14 @@ function optNote(r, c) {
     if (c.walked) return '<div class="so-you bad">✗ You walked from a clean market — safe, but you left +EV on the table. Not every market is a trap.</div>';
     return `<div class="so-you bad">✗ You bet ${c.side} against the verified signal in a fair market.</div>`;
   }
-  const fadedOK = r.key === 'fake_news' && c.side === 'NO';
-  if (fadedOK) return '<div class="so-you good">✓ Optimal — you had a verified edge and used it.</div>';
-  if (c.walked) return r.key === 'fake_news'
-    ? '<div class="so-you good">✓ Safe — you folded a trap (though fading was +EV here).</div>'
+  const fadeable = r.mode === 'fixed';                  // a trap whose outcome is knowable → fade-able
+  const fadeBtn = r.winSide === 'NO' ? 'Buy NO' : 'Buy YES';
+  const fadedOK = fadeable && c.side === r.winSide;
+  if (fadedOK) return '<div class="so-you good">✓ Optimal — you spotted the trap and faded it correctly.</div>';
+  if (c.walked) return fadeable
+    ? '<div class="so-you good">✓ Safe — you folded a trap (fading was +EV here).</div>'
     : '<div class="so-you good">✓ Optimal — you folded a −EV game.</div>';
-  return `<div class="so-you bad">✗ You bet ${c.side} into a −EV game — the optimal play was to ${r.key === 'fake_news' ? 'fade it or walk' : 'walk away'}.</div>`;
+  return `<div class="so-you bad">✗ You bet ${c.side} into a trap — the optimal play was to ${fadeable ? 'fade it (' + fadeBtn + ') or walk' : 'walk away'}.</div>`;
 }
 
 function storyToggleCoach() {

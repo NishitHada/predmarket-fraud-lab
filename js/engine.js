@@ -6,7 +6,7 @@
    - Everything is fake money. This is a teaching sandbox for market abuse.
    ========================================================================= */
 
-const APP_VERSION = 'v1.2';   // shown in footer; keep the ?v=N script tags in sync on release
+const APP_VERSION = 'v1.3';   // shown in footer; keep the ?v=N script tags in sync on release
 
 const G = {
   tick: 0,
