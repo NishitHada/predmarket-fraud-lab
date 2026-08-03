@@ -386,6 +386,76 @@ function showStrategy() {
 }
 function hideStrategy() { const m = document.getElementById('strategy-modal'); if (m) m.classList.remove('show'); }
 
+/* ---- research dossier: raw sources per scenario (free to read) ---- */
+/* Deliberately mixed quality — official filings next to anonymous posts — so
+   the player practises weighing sources, not just reading conclusions.       */
+const RESEARCH = {
+  momentum: [
+    { icon: '📈', src: 'Price chart', text: '$MOON is up 34% in 20 minutes on record volume, with no pullbacks.' },
+    { icon: '💬', src: 'Forum (new accounts)', text: '"This is THE one, generational wealth incoming 🚀" — near-identical posts from a dozen day-old accounts.' },
+    { icon: '📰', src: 'News search', text: 'No wire, filing, or announcement mentions $MOON today. Nothing fundamental.' },
+  ],
+  fake_news: [
+    { icon: '🚨', src: '@marketwire_now (unverified)', text: '"BREAKING: RivalCorp merger APPROVED — sources." Posted 3 minutes ago.' },
+    { icon: '📰', src: 'Reuters / Bloomberg', text: 'No major wire has reported a decision, and no regulator filing exists.' },
+    { icon: '🧾', src: 'On-chain activity', text: 'The same account that posted the "flash" is selling YES into the spike it caused.' },
+  ],
+  rule_ambiguity: [
+    { icon: '📄', src: 'Market rules page', text: '"Resolves YES if StartupX launches this quarter." The word "launch" is never defined.' },
+    { icon: '📰', src: 'TechBlog', text: 'StartupX plans a private beta and a waitlist; a full public launch is "TBD."' },
+    { icon: '⚖️', src: 'Operator FAQ', text: '"Ambiguous cases are resolved at the platform\'s sole discretion."' },
+  ],
+  liquidity_mirage: [
+    { icon: '📊', src: 'Order book', text: '900+ contracts stacked within 2¢ of mid on both sides — looks very deep.' },
+    { icon: '🧾', src: 'Fill logs', text: 'Yesterday a 300-lot market order slipped 9¢ — far worse than the book implied.' },
+    { icon: '💬', src: 'Forum', text: '"The depth vanishes the second you send size. Don\'t trust the screen."' },
+  ],
+  oracle: [
+    { icon: '📄', src: 'Resolution terms', text: '"Settled by the platform\'s data feed." No independent or backup oracle is named.' },
+    { icon: '📊', src: 'Market consensus', text: 'Market sits at 86% YES — near-unanimous.' },
+    { icon: '🧾', src: 'Position disclosures', text: 'One account is quietly building a large NO position against the 86%.' },
+  ],
+  exit: [
+    { icon: '📄', src: 'Fee schedule', text: 'Fee updated 2 days ago: 15 bps → 300 bps. The change was not announced.' },
+    { icon: '⚖️', src: 'Terms of service', text: '"Withdrawals may be paused at any time for maintenance." No guarantee, no timeline.' },
+    { icon: '💬', src: 'Forum', text: '"Anyone else unable to withdraw since yesterday? Support has gone silent."' },
+  ],
+  source_conflict: [
+    { icon: '📰', src: 'Local news', text: 'Eastside metro construction is complete; opening "expected on schedule."' },
+    { icon: '📄', src: 'Certification rules', text: 'The opening is certified by the project director\'s office — the same office that runs the project.' },
+    { icon: '🧾', src: 'Disclosures', text: 'The project director personally holds a large NO position in this market.' },
+  ],
+  clean_verified: [
+    { icon: '📰', src: 'Transit Authority (official)', text: 'Press release: "New metro line opens to the public Dec 28." Signed and dated.' },
+    { icon: '📄', src: 'Resolution page', text: 'Resolves from the transit authority\'s official schedule — independent of the platform.' },
+    { icon: '📊', src: 'Order book', text: 'Genuine two-sided liquidity across ~12 distinct accounts; fee fixed at 1%.' },
+  ],
+  value_bet: [
+    { icon: '🧪', src: 'Trial registry (public)', text: 'Pre-registered interim readout meets the primary endpoint with margin.' },
+    { icon: '📄', src: 'Resolution page', text: 'Resolves from the public registry — independent, with pre-registered criteria.' },
+    { icon: '📊', src: 'Market', text: 'Trading at 38% YES — the crowd looks slow to price the public data.' },
+  ],
+  clean_no: [
+    { icon: '📊', src: 'Public dashboard', text: 'StartupY user growth has been flat for 6 weeks — far off the 1M-by-quarter pace.' },
+    { icon: '📄', src: 'Resolution page', text: 'Independent oracle; "1M users" is defined precisely in the rules.' },
+    { icon: '📰', src: 'Multiple outlets', text: '"Y\'s growth has clearly stalled" — several independent reports agree.' },
+  ],
+};
+
+function showResearch() {
+  const m = document.getElementById('research-modal'); if (!m) return;
+  const r = curRound(); if (!r) return;
+  const items = (typeof RESEARCH !== 'undefined' && RESEARCH[r.key]) || [];
+  m.querySelector('.story-card').innerHTML = `
+    <div class="story-tag">📁 Research desk</div>
+    <h2 class="research-h">${esc(r.question)}</h2>
+    <p class="research-note">Raw sources — free to read. Some are reliable, some aren't; weighing them is the job. Your due-diligence checks verify the ones that matter.</p>
+    <div class="research-list">${items.map(it => `<div class="research-item"><span class="ri-ico">${it.icon}</span><div><div class="ri-src">${esc(it.src)}</div><div class="ri-text">${esc(it.text)}</div></div></div>`).join('') || '<div class="empty">No documents for this market.</div>'}</div>
+    <div class="story-actions"><button class="story-btn primary" onclick="hideResearch()">Back to the desk</button></div>`;
+  m.classList.add('show');
+}
+function hideResearch() { const m = document.getElementById('research-modal'); if (m) m.classList.remove('show'); }
+
 /* --------------------------- state machine ---------------------------- */
 
 function setPhase(phase) { STORY.state.phase = phase; G.running = (phase === 'bet' || phase === 'running'); }
@@ -691,7 +761,7 @@ function renderFinish() {
       <div class="fr-row"><span class="fr-ico">🏦</span><div><b>Platform</b> — rigged fees, frozen exits. Defense: non-custodial settlement, disclosed terms.</div></div>
     </div>
     <div class="story-lesson">The skill was never picking YES or NO — it was <b>classifying the market first.</b> Investigate, fold the traps, and press the edges when every layer checks out. Distrust is a tool, not a religion.</div>
-    <div class="story-actions"><button class="story-btn primary" onclick="storyStart()">↺ Play again (new draw)</button><button class="story-btn" onclick="storyExit()">Explore the sandbox →</button></div>`;
+    <div class="story-actions"><button class="story-btn primary" onclick="storyStart()">↺ Play again (new draw)</button><button class="story-btn" onclick="showStrategy()">📐 The strategy</button><button class="story-btn" onclick="storyExit()">Explore the sandbox →</button></div>`;
 }
 
 /* ----------------------------- modal / coach -------------------------- */

@@ -28,6 +28,38 @@ function runSmokeTest() {
     const beforeNo = trader('YOU').shares; youTrade('sell');
     ok('Buy NO updates position', trader('YOU').shares < beforeNo, 'shares=' + trader('YOU').shares);
 
+    // 3c) Your Desk renders correct numbers (the panel that "seemed buggy")
+    const dollars = s => Math.round(parseFloat(String(s).replace(/[^0-9.\-]/g, '')) || 0);  // parseFloat handles the sign
+    resetSim(); clearInterval(loopTimer); warm(4);
+    selectedQty = 100; youTrade('buy'); renderDesk();
+    const y1 = trader('YOU');
+    const posTxt = document.getElementById('you-pos').textContent;
+    const payYes = dollars(document.getElementById('pay-yes').textContent);
+    const payNo = dollars(document.getElementById('pay-no').textContent);
+    // invariant: (ifYES - ifNO) in dollars === your share count (each YES share pays $1 more under YES)
+    const invariant = Math.abs((payYes - payNo) - y1.shares) <= 1;
+    ok('Desk payouts obey (ifYES - ifNO) == position', invariant, `posTxt="${posTxt}" ifYES=${payYes} ifNO=${payNo} shares=${y1.shares}`);
+    ok('Desk shows YES position after Buy YES', posTxt.includes('YES') && payYes > 0 && payNo < 0, `ifYES=${payYes} ifNO=${payNo}`);
+
+    // 3d) Close position flattens (sweeps the book to fully exit)
+    document.getElementById('close-pos').onclick();   // simulate the wired handler
+    ok('Close my position flattens', trader('YOU').shares === 0, 'shares=' + trader('YOU').shares);
+
+    // 3e) BUG FIX: in a fresh story round with no position, P&L/payouts read $0
+    //     (not the cumulative loss carried from earlier rounds)
+    storyStart(); clearInterval(loopTimer);
+    STORY.state.deck = [STORY.pool.find(p => p.family !== 'clean'), STORY.pool.find(p => p.key === 'clean_verified')];
+    STORY.state.i = -1; storyNextRound(); clearInterval(loopTimer);
+    storyEnterBet(); selectedQty = 100; youTrade('buy'); storyLockIn();
+    for (let i = 0; i < 14; i++) { G.running = true; tickOnce(); }
+    storyNextRound(); clearInterval(loopTimer); renderDesk();     // round 2, no position yet
+    const freshPnl = dollars(document.getElementById('you-now').textContent);
+    const freshYes = dollars(document.getElementById('pay-yes').textContent);
+    const freshNo = dollars(document.getElementById('pay-no').textContent);
+    ok('Fresh story round shows $0 P&L with no position', freshPnl === 0 && freshYes === 0 && freshNo === 0,
+      `roundPnL=${freshPnl} ifYES=${freshYes} ifNO=${freshNo}`);
+    storyExit();
+
     // 4) Toast displays (the previously-broken path)
     flashToast('smoke test toast', 'info');
     const toastShown = !!(G.toast && G.toast.time) && document.getElementById('toast').className.includes('show');

@@ -424,3 +424,18 @@ body.story .col.right:empty{display:none}
 .story-pnl.warnclr{color:var(--amber)} .story-pnl.warnclr b{color:var(--amber)}
 .dd-clue:has(> :first-child),.coach-tip{overflow-wrap:anywhere}
 .coach-tip.good{background:rgba(79,209,139,.08);border-color:rgba(79,209,139,.32);color:#7fe0b0}
+
+body.story .deskhint{display:none}
+
+/* strategy modal sits above the primer/finale so it can overlay them */
+#strategy-modal{z-index:80}
+
+/* research dossier */
+#research-modal{z-index:80}
+.research-h{font-size:16px;margin:6px 0 4px}
+.research-note{font-size:12.5px;color:var(--dim);line-height:1.5;margin-bottom:12px}
+.research-list{display:flex;flex-direction:column;gap:8px;max-height:52vh;overflow:auto}
+.research-item{display:flex;gap:11px;align-items:flex-start;background:#10141d;border:1px solid var(--line);border-radius:8px;padding:10px 12px}
+.ri-ico{font-size:18px;flex:0 0 auto;line-height:1.2}
+.ri-src{font-size:11px;color:var(--dimmer);text-transform:uppercase;letter-spacing:.04em;margin-bottom:2px}
+.ri-text{font-size:13px;color:var(--ink);line-height:1.45}

@@ -20,13 +20,20 @@ function renderDesk() {
   else if (y.shares > 0) { posEl.textContent = y.shares + ' YES'; posEl.className = 'posbig yes'; }
   else { posEl.textContent = (-y.shares) + ' NO'; posEl.className = 'posbig no'; }
 
-  const pnlNow = youWealth() - y.startCash;
+  // In story mode, P&L and payouts are per-round: baseline is the round's
+  // starting wealth, so a fresh round with no position reads $0 (not the
+  // cumulative loss carried from earlier rounds).
+  const inStory0 = typeof storyActive === 'function' && storyActive();
+  const base = (inStory0 && typeof STORY.state.roundStartWealth === 'number')
+    ? STORY.state.roundStartWealth : y.startCash;
+
+  const pnlNow = youWealth() - base;
   const nowEl = $('#you-now');
-  nowEl.textContent = 'P&L now: ' + signMoney(pnlNow);
+  nowEl.textContent = (inStory0 ? 'Round P&L: ' : 'P&L now: ') + signMoney(pnlNow);
   nowEl.className = 'posnow ' + (pnlNow >= 0 ? 'up' : 'down');
 
-  const payYes = (y.cash + y.shares * 100) - y.startCash;
-  const payNo = y.cash - y.startCash;
+  const payYes = (y.cash + y.shares * 100) - base;
+  const payNo = y.cash - base;
   const py = $('#pay-yes'), pn = $('#pay-no');
   py.textContent = signMoney(payYes); py.className = payYes >= 0 ? 'up' : 'down';
   pn.textContent = signMoney(payNo); pn.className = payNo >= 0 ? 'up' : 'down';

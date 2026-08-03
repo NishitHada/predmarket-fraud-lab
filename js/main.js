@@ -100,7 +100,7 @@ function wireControls() {
   $('#coach-lockin').onclick = () => storyLockIn();
   $('#coach-walk').onclick = () => storyWalkAway();
   $('#coach-toggle').onclick = () => storyToggleCoach();
-  $('#strategy-btn').onclick = () => showStrategy();
+  $('#coach-research').onclick = () => showResearch();
 
   // primer / framing modal
   const primer = $('#primer-modal');
@@ -109,6 +109,7 @@ function wireControls() {
   $('#help-btn').onclick = openPrimer;
   $('#primer-play').onclick = () => { closePrimer(); storyStart(); };
   $('#primer-explore').onclick = closePrimer;
+  $('#primer-strategy').onclick = () => showStrategy();   // strategy lives in-flow now, not the header
   // show once per browser, first visit
   try {
     // don't interrupt a story-mode deep link with the primer
@@ -143,9 +144,11 @@ function youTrade(side, qtyOverride, isClose) {
   const qty = qtyOverride || selectedQty;
   const before = Math.round(G.market.lastPrice);
   const a = bestAsk(), b = bestBid();
-  const limit = side === 'buy'
-    ? Math.min(99, (a ? a.price : before) + 5)   // marketable buy (sweeps up to 5¢ through)
-    : Math.max(1, (b ? b.price : before) - 5);   // marketable sell
+  const limit = isClose
+    ? (side === 'buy' ? 99 : 1)                    // closing: sweep the whole book to fully exit
+    : (side === 'buy'
+        ? Math.min(99, (a ? a.price : before) + 5) // marketable buy (sweeps up to 5¢ through)
+        : Math.max(1, (b ? b.price : before) - 5));// marketable sell
   const res = placeOrder('YOU', side, limit, qty, 'you');
 
   if (res.blocked) {
