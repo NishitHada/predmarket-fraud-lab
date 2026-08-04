@@ -446,3 +446,54 @@ body.story .deskhint{display:none}
 .banner.aftermath{background:rgba(224,179,65,.08);color:var(--dim)}
 .banner.aftermath b{color:var(--ink)}
 .banner.aftermath .pdot{background:var(--amber);animation:none;box-shadow:none}
+
+/* ============================ MOBILE (phones) ============================ */
+html,body{max-width:100%;overflow-x:hidden}
+
+@media (max-width:640px){
+  /* header: brand on top, controls wrap onto their own full-width row */
+  .topbar{flex-wrap:wrap;gap:8px;padding:8px 12px}
+  .logo{font-size:18px}
+  .btitle{font-size:14px}
+  .bsub{display:none}                 /* save vertical space on phones */
+  .controls{order:3;width:100%;flex-wrap:wrap;gap:6px;justify-content:flex-start}
+  #step,.speed-label{display:none}     /* declutter — Pause/Reset/Speed are enough */
+  #speed{width:96px}
+  .tickno{font-size:11px}
+  .story-cta{font-size:12px;padding:7px 12px}
+
+  /* market bar: stack the question above left-aligned stats (no more clipping) */
+  .marketbar{flex-direction:column;align-items:stretch;gap:10px;padding:10px 12px}
+  .mqtext{font-size:15px}
+  .mstats{gap:16px 20px;flex-wrap:wrap;justify-content:flex-start;width:100%}
+  .stat{text-align:left}
+  .stat .big{font-size:26px}
+
+  .banner{font-size:12px;padding:9px 12px}
+
+  /* content */
+  .grid{padding:10px;gap:10px}
+  #chart{height:180px}
+  .lesson-grid{grid-template-columns:1fr}
+
+  /* modals: tighter padding, smaller headings, comfortable scroll */
+  .story-modal{padding:10px}
+  .story-card{padding:18px 15px;border-radius:12px;max-height:94vh}
+  .story-card h2{font-size:18px;line-height:1.25}
+  .story-q,.research-h{font-size:14px}
+  .story-actions .story-btn{flex:1 1 auto}
+
+  /* coach bar: full-width sheet; actions wrap; lock-in gets its own row */
+  .story-coach{left:0;width:100%;transform:translateY(120%);border-radius:14px 14px 0 0;padding:10px 12px;gap:8px}
+  .story-coach.show{transform:translateY(0)}
+  .coach-spacer{display:none}
+  .coach-actions{flex-wrap:wrap;gap:6px}
+  .coach-actions .story-btn{flex:1 1 auto;font-size:12px;padding:9px 10px}
+  #coach-lockin{flex:1 1 100%}
+  /* leave room so the fixed coach sheet never hides the desk/tape */
+  body.story .grid{padding-bottom:210px}
+
+  /* touch targets */
+  .controls button,.tb,.qbtn,.story-btn,.dd-btn,.rchip{min-height:38px}
+  .qbtn{padding:6px 12px}
+}
